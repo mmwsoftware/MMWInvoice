@@ -195,6 +195,7 @@ export default function QuotationDetails({
 
       {/* Action Buttons */}
       <div
+        className="quot-form-actions"
         style={{
           display: "flex",
           justifyContent: "space-between",

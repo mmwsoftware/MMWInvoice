@@ -76,6 +76,7 @@ export default function InvoicePreview({
 
   return (
     <div
+      className="prev-container"
       style={{
         maxWidth: "1320px",
         margin: "0 auto",
@@ -311,6 +312,11 @@ export default function InvoicePreview({
           .prev-summary-card {
             position: static !important;
             width: 100% !important;
+          }
+        }
+        @media (max-width: 640px) {
+          .prev-container {
+            padding: 16px 12px 32px 12px !important;
           }
         }
       `}</style>

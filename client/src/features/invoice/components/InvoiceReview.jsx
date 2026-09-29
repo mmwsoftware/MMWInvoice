@@ -152,16 +152,18 @@ export default function InvoiceReview({
         </div>
       </div>
 
-      {/* Products Table Summary */}
+      {/* Products Table Summary (Desktop >= 768px) */}
       <div
+        className="rev-desktop-table"
         style={{
           border: "1px solid #e2e8f0",
           borderRadius: "14px",
-          overflow: "hidden",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
           marginBottom: "20px",
         }}
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "550px" }}>
           <thead>
             <tr style={{ backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
               <th className="rev-th" style={{ width: "50px", textAlign: "center" }}>S.No</th>
@@ -210,15 +212,49 @@ export default function InvoiceReview({
         </table>
       </div>
 
+      {/* Mobile Products Review Cards (< 768px) */}
+      <div className="rev-mobile-cards">
+        {products.map((item, idx) => {
+          const qty = parseFloat(item.quantity) || 0;
+          const rate = parseFloat(item.rate) || 0;
+          const itemTotal = qty * rate;
+
+          return (
+            <div key={idx} className="rev-item-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                <div>
+                  <span className="rev-item-badge">Item #{idx + 1}</span>
+                  <h5 style={{ margin: "6px 0 0 0", fontSize: "14px", fontWeight: 700, color: "#0f172a" }}>
+                    {item.description}
+                  </h5>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>Amount</span>
+                  <span style={{ fontSize: "15px", fontWeight: 700, color: "#059669" }}>
+                    ₹{itemTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "16px", fontSize: "12px", color: "#64748b", borderTop: "1px dashed #e2e8f0", paddingTop: "8px" }}>
+                <span>HSN: <strong style={{ color: "#334155" }}>{item.hsn || "—"}</strong></span>
+                <span>Qty: <strong style={{ color: "#334155" }}>{item.quantity}</strong></span>
+                <span>Rate: <strong style={{ color: "#334155" }}>₹{rate.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong></span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Totals Box */}
       <div
+        className="rev-calc-container"
         style={{
           display: "flex",
           justifyContent: "flex-end",
           marginBottom: "20px",
         }}
       >
-        <div style={{ width: "260px" }}>
+        <div className="rev-calc-box" style={{ width: "280px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "14px", color: "#64748b" }}>
             <span>Sub Total:</span>
             <span style={{ fontWeight: 600, color: "#1e293b" }}>
@@ -310,12 +346,15 @@ export default function InvoiceReview({
 
       {/* Action Buttons */}
       <div
+        className="rev-actions-bar"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           paddingTop: "20px",
           borderTop: "1px solid #f1f5f9",
+          flexWrap: "wrap",
+          gap: "12px",
         }}
       >
         <button
@@ -326,7 +365,22 @@ export default function InvoiceReview({
           ← Edit Details
         </button>
 
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div className="rev-btn-group" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/dashboard/invoice/preview", {
+                state: { customerData, invoiceData, products },
+              })
+            }
+            className="inv-btn-preview-link"
+          >
+            <svg style={{ height: "16px", width: "16px" }} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+            Preview PDF
+          </button>
           <button
             type="button"
             onClick={onSaveDraft}
@@ -346,6 +400,12 @@ export default function InvoiceReview({
       </div>
 
       <style>{`
+        .rev-desktop-table {
+          display: block;
+        }
+        .rev-mobile-cards {
+          display: none;
+        }
         .rev-th {
           padding: 12px 16px;
           text-align: left;
@@ -357,11 +417,44 @@ export default function InvoiceReview({
           padding: 12px 16px;
           font-size: 13px;
         }
+        .rev-item-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 14px;
+          background-color: #f8fafc;
+        }
+        .rev-item-badge {
+          font-size: 11px;
+          font-weight: 700;
+          color: #2563eb;
+          background-color: #eff6ff;
+          padding: 2px 8px;
+          border-radius: 20px;
+          border: 1px solid #bfdbfe;
+        }
+        .inv-btn-preview-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 10px 18px;
+          font-size: 13.5px;
+          font-weight: 600;
+          color: #2563eb;
+          background-color: #eff6ff;
+          border: 1.5px solid #bfdbfe;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .inv-btn-preview-link:hover {
+          background-color: #dbeafe;
+          border-color: #93c5fd;
+        }
         .inv-btn-generate {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          padding: 10px 24px;
+          padding: 10px 22px;
           font-size: 14px;
           font-weight: 600;
           color: #ffffff;
@@ -376,6 +469,39 @@ export default function InvoiceReview({
           transform: translateY(-1px);
           filter: brightness(1.05);
           box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+        }
+
+        @media (max-width: 767px) {
+          .rev-desktop-table {
+            display: none !important;
+          }
+          .rev-mobile-cards {
+            display: flex !important;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+          }
+          .rev-calc-container {
+            justify-content: stretch !important;
+          }
+          .rev-calc-box {
+            width: 100% !important;
+          }
+          .rev-actions-bar {
+            flex-direction: column-reverse !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          .rev-btn-group {
+            flex-direction: column !important;
+            width: 100% !important;
+          }
+          .rev-btn-group button,
+          .rev-actions-bar > button {
+            width: 100% !important;
+            justify-content: center !important;
+            height: 44px;
+          }
         }
       `}</style>
     </div>

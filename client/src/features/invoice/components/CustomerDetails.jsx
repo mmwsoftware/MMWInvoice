@@ -160,6 +160,7 @@ export default function CustomerDetails({
 
       {/* Action Buttons */}
       <div
+        className="inv-form-actions"
         style={{
           display: "flex",
           justifyContent: "flex-end",

@@ -24,6 +24,7 @@ export default function PDFViewer({
 
   return (
     <div
+      className="pdf-viewer-container"
       style={{
         borderRadius: "16px",
         overflow: "hidden",
@@ -132,6 +133,7 @@ export default function PDFViewer({
         {/* Left Thumbnails Pane */}
         {showThumbnails && (
           <div
+            className="pdf-thumb-pane"
             style={{
               width: "120px",
               backgroundColor: "#202224",
@@ -263,6 +265,14 @@ export default function PDFViewer({
         }
         .pdf-tool-btn:hover:not(:disabled) {
           background-color: rgba(255, 255, 255, 0.12);
+        }
+        @media (max-width: 640px) {
+          .pdf-thumb-pane {
+            display: none !important;
+          }
+          .pdf-viewer-container {
+            height: 560px !important;
+          }
         }
       `}</style>
     </div>

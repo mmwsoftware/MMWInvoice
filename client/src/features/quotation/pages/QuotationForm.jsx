@@ -95,6 +95,7 @@ export default function QuotationForm() {
 
   return (
     <div
+      className="quot-form-container"
       style={{
         maxWidth: "1280px",
         margin: "0 auto",
@@ -108,15 +109,16 @@ export default function QuotationForm() {
         </div>
       )}
 
-      {/* Top Header: Title & Horizontal Progress Stepper */}
+      {/* Top Header */}
       <div
+        className="quot-top-header"
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: "28px",
+          marginBottom: "20px",
           flexWrap: "wrap",
-          gap: "20px",
+          gap: "16px",
         }}
       >
         {/* Left: Back & Title */}
@@ -127,26 +129,31 @@ export default function QuotationForm() {
           >
             ← Back
           </button>
-          <h1
-            style={{
-              fontSize: "24px",
-              fontWeight: 700,
-              color: "#0f172a",
-              margin: "4px 0 0 0",
-            }}
-          >
-            Create Sales Quotation
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
+            <h1
+              style={{
+                fontSize: "24px",
+                fontWeight: 700,
+                color: "#0f172a",
+                margin: 0,
+              }}
+            >
+              Create Sales Quotation
+            </h1>
+            <span className="quot-mobile-badge">
+              Step {currentStep}/4
+            </span>
+          </div>
         </div>
 
-        {/* Center/Right: Horizontal Stepper */}
+        {/* Desktop Horizontal Stepper (hidden on mobile) */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: "8px",
           }}
-          className="quot-stepper"
+          className="quot-stepper-desktop"
         >
           {STEPS.map((step, idx) => {
             const isCompleted = currentStep > step.id;
@@ -231,6 +238,14 @@ export default function QuotationForm() {
             );
           })}
         </div>
+      </div>
+
+      {/* Mobile Animated Progress Bar */}
+      <div className="quot-mobile-prog-bar">
+        <div
+          className="quot-mobile-prog-fill"
+          style={{ width: `${(currentStep / 4) * 100}%` }}
+        />
       </div>
 
       {/* Main Content Area: Sticky Left Step Navigation + Right Form Card */}
@@ -353,9 +368,22 @@ export default function QuotationForm() {
               onChangeProduct={handleProductChange}
               onAddProduct={handleAddProduct}
               onRemoveProduct={handleRemoveProduct}
-              onNext={() => setCurrentStep(4)}
+              onNext={() =>
+                navigate("/dashboard/quotation/preview", {
+                  state: { letterData, quotationData, products },
+                })
+              }
               onPrev={() => setCurrentStep(2)}
               onSaveDraft={handleSaveDraft}
+            />
+          )}
+
+          {currentStep === 4 && (
+            <QuotationPreview
+              letterData={letterData}
+              quotationData={quotationData}
+              products={products}
+              onEdit={() => setCurrentStep(3)}
             />
           )}
         </div>
@@ -468,7 +496,40 @@ export default function QuotationForm() {
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
           animation: slideIn 0.3s ease-out;
         }
+        .quot-mobile-badge {
+          display: none;
+          font-size: 12px;
+          font-weight: 700;
+          color: #2563eb;
+          background-color: #eff6ff;
+          padding: 3px 10px;
+          border-radius: 100px;
+          border: 1px solid #bfdbfe;
+        }
+        .quot-mobile-prog-bar {
+          display: none;
+          height: 4px;
+          background-color: #e2e8f0;
+          border-radius: 4px;
+          overflow: hidden;
+          margin-bottom: 18px;
+        }
+        .quot-mobile-prog-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #2563eb, #3b82f6);
+          border-radius: 4px;
+          transition: width 0.3s ease;
+        }
         @media (max-width: 840px) {
+          .quot-stepper-desktop {
+            display: none !important;
+          }
+          .quot-mobile-badge {
+            display: inline-block !important;
+          }
+          .quot-mobile-prog-bar {
+            display: block !important;
+          }
           .quot-layout-grid {
             grid-template-columns: 1fr !important;
             gap: 16px !important;
@@ -476,23 +537,57 @@ export default function QuotationForm() {
           .quot-grid-2 {
             grid-template-columns: 1fr !important;
           }
-          .quot-stepper-line {
-            width: 20px !important;
-          }
           .quot-card {
             padding: 20px 16px !important;
+            border-radius: 16px !important;
           }
           .quot-step-sidebar {
             position: static !important;
             flex-direction: row !important;
             overflow-x: auto !important;
-            padding-bottom: 4px !important;
+            padding: 4px 0 8px 0 !important;
             -webkit-overflow-scrolling: touch;
+            gap: 8px !important;
           }
           .quot-step-item {
-            padding: 8px 12px !important;
+            padding: 8px 14px !important;
             white-space: nowrap !important;
             flex-shrink: 0 !important;
+            border-radius: 100px !important;
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+          }
+          .quot-step-active {
+            background-color: #eff6ff !important;
+            border-color: #93c5fd !important;
+          }
+        }
+        @media (max-width: 640px) {
+          .quot-form-container {
+            padding: 16px 12px !important;
+          }
+          .quot-card {
+            padding: 16px 12px !important;
+          }
+          .quot-input {
+            height: 44px !important;
+            font-size: 15px !important;
+          }
+          .quot-btn-primary,
+          .quot-btn-secondary,
+          .quot-btn-back {
+            min-height: 44px !important;
+          }
+          .quot-form-actions {
+            display: flex !important;
+            gap: 10px !important;
+            width: 100% !important;
+          }
+          .quot-form-actions button,
+          .quot-form-actions div button {
+            flex: 1 !important;
+            justify-content: center !important;
+            text-align: center !important;
           }
         }
       `}</style>

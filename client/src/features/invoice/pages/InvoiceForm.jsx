@@ -95,6 +95,7 @@ export default function InvoiceForm() {
 
   return (
     <div
+      className="inv-form-container"
       style={{
         maxWidth: "1280px",
         margin: "0 auto",
@@ -108,15 +109,16 @@ export default function InvoiceForm() {
         </div>
       )}
 
-      {/* Top Header: Title & Horizontal Progress Stepper */}
+      {/* Top Header */}
       <div
+        className="inv-top-header"
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: "28px",
+          marginBottom: "20px",
           flexWrap: "wrap",
-          gap: "20px",
+          gap: "16px",
         }}
       >
         {/* Left: Back & Title */}
@@ -127,26 +129,31 @@ export default function InvoiceForm() {
           >
             ← Back
           </button>
-          <h1
-            style={{
-              fontSize: "24px",
-              fontWeight: 700,
-              color: "#0f172a",
-              margin: "4px 0 0 0",
-            }}
-          >
-            Create Tax Invoice
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
+            <h1
+              style={{
+                fontSize: "24px",
+                fontWeight: 700,
+                color: "#0f172a",
+                margin: 0,
+              }}
+            >
+              Create Tax Invoice
+            </h1>
+            <span className="inv-mobile-badge">
+              Step {currentStep}/4
+            </span>
+          </div>
         </div>
 
-        {/* Center/Right: Horizontal Stepper */}
+        {/* Desktop Horizontal Stepper (hidden on mobile) */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: "8px",
           }}
-          className="inv-stepper"
+          className="inv-stepper-desktop"
         >
           {STEPS.map((step, idx) => {
             const isCompleted = currentStep > step.id;
@@ -232,6 +239,14 @@ export default function InvoiceForm() {
             );
           })}
         </div>
+      </div>
+
+      {/* Mobile Animated Progress Bar */}
+      <div className="inv-mobile-prog-bar">
+        <div
+          className="inv-mobile-prog-fill"
+          style={{ width: `${(currentStep / 4) * 100}%` }}
+        />
       </div>
 
       {/* Main Content Area: Left Step Navigation Sidebar + Right Form Card */}
@@ -493,7 +508,40 @@ export default function InvoiceForm() {
             transform: translateY(0);
           }
         }
+        .inv-mobile-badge {
+          display: none;
+          font-size: 12px;
+          font-weight: 700;
+          color: #2563eb;
+          background-color: #eff6ff;
+          padding: 3px 10px;
+          border-radius: 100px;
+          border: 1px solid #bfdbfe;
+        }
+        .inv-mobile-prog-bar {
+          display: none;
+          height: 4px;
+          background-color: #e2e8f0;
+          border-radius: 4px;
+          overflow: hidden;
+          margin-bottom: 18px;
+        }
+        .inv-mobile-prog-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #2563eb, #3b82f6);
+          border-radius: 4px;
+          transition: width 0.3s ease;
+        }
         @media (max-width: 840px) {
+          .inv-stepper-desktop {
+            display: none !important;
+          }
+          .inv-mobile-badge {
+            display: inline-block !important;
+          }
+          .inv-mobile-prog-bar {
+            display: block !important;
+          }
           .inv-layout-grid {
             grid-template-columns: 1fr !important;
             gap: 16px !important;
@@ -501,23 +549,57 @@ export default function InvoiceForm() {
           .inv-grid-2 {
             grid-template-columns: 1fr !important;
           }
-          .inv-stepper-line {
-            width: 20px !important;
-          }
           .inv-card {
             padding: 20px 16px !important;
+            border-radius: 16px !important;
           }
           .inv-step-sidebar {
             position: static !important;
             flex-direction: row !important;
             overflow-x: auto !important;
-            padding-bottom: 4px !important;
+            padding: 4px 0 8px 0 !important;
             -webkit-overflow-scrolling: touch;
+            gap: 8px !important;
           }
           .inv-step-item {
-            padding: 8px 12px !important;
+            padding: 8px 14px !important;
             white-space: nowrap !important;
             flex-shrink: 0 !important;
+            border-radius: 100px !important;
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+          }
+          .inv-step-active {
+            background-color: #eff6ff !important;
+            border-color: #93c5fd !important;
+          }
+        }
+        @media (max-width: 640px) {
+          .inv-form-container {
+            padding: 16px 12px !important;
+          }
+          .inv-card {
+            padding: 16px 12px !important;
+          }
+          .inv-input {
+            height: 44px !important;
+            font-size: 15px !important;
+          }
+          .inv-btn-primary,
+          .inv-btn-secondary,
+          .inv-btn-back {
+            min-height: 44px !important;
+          }
+          .inv-form-actions {
+            display: flex !important;
+            gap: 10px !important;
+            width: 100% !important;
+          }
+          .inv-form-actions button,
+          .inv-form-actions div button {
+            flex: 1 !important;
+            justify-content: center !important;
+            text-align: center !important;
           }
         }
       `}</style>

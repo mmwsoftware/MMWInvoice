@@ -146,6 +146,7 @@ export default function LetterDetails({
 
       {/* Action Buttons */}
       <div
+        className="quot-form-actions"
         style={{
           display: "flex",
           justifyContent: "flex-end",

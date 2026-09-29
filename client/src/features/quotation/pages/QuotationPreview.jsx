@@ -65,6 +65,7 @@ export default function QuotationPreview({
 
   return (
     <div
+      className="qprev-container"
       style={{
         maxWidth: "1320px",
         margin: "0 auto",
@@ -299,6 +300,11 @@ export default function QuotationPreview({
           .qprev-summary-card {
             position: static !important;
             width: 100% !important;
+          }
+        }
+        @media (max-width: 640px) {
+          .qprev-container {
+            padding: 16px 12px 32px 12px !important;
           }
         }
       `}</style>

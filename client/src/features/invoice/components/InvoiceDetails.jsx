@@ -145,6 +145,7 @@ export default function InvoiceDetails({
 
       {/* Action Buttons */}
       <div
+        className="inv-form-actions"
         style={{
           display: "flex",
           justifyContent: "space-between",
