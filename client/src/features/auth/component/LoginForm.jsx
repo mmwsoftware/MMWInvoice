@@ -1,0 +1,493 @@
+import React, { useState } from "react";
+
+export default function LoginForm() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-3 sm:p-5">
+
+      {/* Main Card */}
+      <div
+        className="
+          login-container
+          w-full max-w-275
+          overflow-hidden
+          rounded-2xl
+          bg-white
+          shadow-[0_15px_50px_rgba(15,23,42,0.12)]
+          flex flex-col md:flex-row
+        "
+      >
+
+        {/* ================= LEFT ================= */}
+        <div
+          className="
+            left-panel
+            relative
+            md:w-[50%]
+            md:min-h-145
+            overflow-hidden
+            bg-[#06428d]
+            text-white
+          "
+        >
+
+          {/* Background Image */}
+          <div
+            className="
+              absolute inset-0
+              bg-cover bg-center
+              opacity-35
+            "
+            style={{
+              backgroundImage: "url('/images/mmw-building.jpg')",
+            }}
+          />
+
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-linear-to-br from-[#04377b] via-[#0752a5] to-[#0b68c7]" />
+
+          {/* Content */}
+          <div className="relative z-10 h-full md:min-h-145 flex flex-col justify-between gap-8 p-6 sm:p-8 md:p-10">
+
+            {/* Logo */}
+            <div className="animate-slide-down flex items-center gap-3">
+
+              <div className="h-14 w-20 bg-white rounded-lg flex items-center justify-center shadow-md">
+                <img
+                  src="/logo.png"
+                  alt="MMW"
+                  className="max-h-16 max-w-18 object-contain"
+                />
+              </div>
+
+              <div>
+                <p className="text-base font-semibold">
+                  Maxmoc Motor Works
+                </p>
+
+                <p className="text-xs text-blue-100">
+                  India Private Limited
+                </p>
+              </div>
+
+            </div>
+
+
+            {/* Main Content */}
+            <div className="animate-slide-up max-w-110">
+
+              <p className="mb-3 text-xs font-medium uppercase tracking-[0.15em] text-blue-200">
+                Business Document Management
+              </p>
+
+              <h1 className="text-2xl lg:text-3xl font-bold leading-tight">
+                Invoice & Quotation
+                <br />
+                <span className="text-blue-100">
+                  Management
+                </span>
+              </h1>
+
+              <p className="mt-4 max-w-95 text-sm sm:text-base leading-6 text-blue-100">
+                Create professional quotations and tax invoices with ease.
+              </p>
+
+
+              {/* Features */}
+              <div className="mt-6 space-y-3">
+
+                <Feature
+                  icon="⚡"
+                  title="Fast"
+                />
+
+                <Feature
+                  icon="✓"
+                  title="Accurate"
+                />
+
+                <Feature
+                  icon="🔒"
+                  title="Secure"
+                />
+
+                <Feature
+                  icon="✦"
+                  title="Professional"
+                />
+
+              </div>
+
+            </div>
+
+
+            {/* Footer */}
+            <div className="text-xs text-blue-200/80">
+              © 2026 Maxmoc Motor Works India Pvt Ltd
+              <span className="mx-2">•</span>
+              All rights reserved
+            </div>
+
+          </div>
+        </div>
+
+
+        {/* ================= RIGHT ================= */}
+        <div
+          className="
+            right-panel
+            flex-1
+            flex items-center justify-center
+            bg-[#f8fafc]
+            p-6
+            sm:p-8
+            md:p-10
+          "
+        >
+
+          <div className="w-full max-w-100 animate-fade-in">
+
+            {/* Heading */}
+            <div className="mb-7">
+
+              <h2 className="text-3xl font-bold text-slate-900">
+                Welcome Back
+              </h2>
+
+              <p className="mt-2 text-sm text-slate-500">
+                Sign in to continue to your account
+              </p>
+
+            </div>
+
+
+            {/* Form */}
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-5"
+            >
+
+              {/* Email */}
+              <div>
+
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Email Address
+                </label>
+
+                <div className="relative">
+
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-slate-400">
+                    ✉
+                  </span>
+
+                  <input
+                    type="email"
+                    placeholder="you@company.com"
+                    required
+                    className="
+                      h-12
+                      w-full
+                      rounded-lg
+                      border border-slate-200
+                      bg-white
+                      pl-11 pr-3
+                      text-sm
+                      outline-none
+                      transition
+                      duration-200
+                      focus:border-blue-500
+                      focus:ring-4
+                      focus:ring-blue-500/10
+                    "
+                  />
+
+                </div>
+
+              </div>
+
+
+              {/* Password */}
+              <div>
+
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Password
+                </label>
+
+                <div className="relative">
+
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-slate-400">
+                    🔒
+                  </span>
+
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    required
+                    className="
+                      h-12
+                      w-full
+                      rounded-lg
+                      border border-slate-200
+                      bg-white
+                      pl-11 pr-11
+                      text-sm
+                      outline-none
+                      transition
+                      duration-200
+                      focus:border-blue-500
+                      focus:ring-4
+                      focus:ring-blue-500/10
+                    "
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="
+                      absolute
+                      right-3.5
+                      top-1/2
+                      -translate-y-1/2
+                      text-base
+                      text-slate-400
+                      hover:text-blue-600
+                      transition
+                    "
+                  >
+                    {showPassword ? "◉" : "◌"}
+                  </button>
+
+                </div>
+
+              </div>
+
+
+              {/* Remember / Forgot */}
+              <div className="flex items-center justify-between">
+
+                <label className="flex items-center gap-2 cursor-pointer">
+
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-blue-600"
+                  />
+
+                  <span className="text-sm text-slate-600">
+                    Remember me
+                  </span>
+
+                </label>
+
+                <button
+                  type="button"
+                  className="
+                    text-sm
+                    font-medium
+                    text-blue-600
+                    hover:text-blue-800
+                  "
+                >
+                  Forgot password?
+                </button>
+
+              </div>
+
+
+              {/* Login */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="
+                  group
+                  relative
+                  h-12
+                  w-full
+                  overflow-hidden
+                  rounded-lg
+                  bg-blue-600
+                  text-base
+                  font-semibold
+                  text-white
+                  shadow-md
+                  shadow-blue-600/20
+                  transition-all
+                  duration-300
+                  hover:-translate-y-0.5
+                  hover:bg-blue-700
+                  hover:shadow-lg
+                  active:translate-y-0
+                  disabled:opacity-70
+                "
+              >
+
+                {/* Small shine animation */}
+                <span
+                  className="
+                    absolute
+                    inset-y-0
+                    -left-16
+                    w-12
+                    rotate-12
+                    bg-white/20
+                    transition-all
+                    duration-700
+                    group-hover:left-[110%]
+                  "
+                />
+
+                <span className="relative flex items-center justify-center gap-2">
+
+                  {loading ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Login
+                      <span className="transition-transform duration-200 group-hover:translate-x-1">
+                        →
+                      </span>
+                    </>
+                  )}
+
+                </span>
+
+              </button>
+
+            </form>
+
+
+            {/* Bottom Security */}
+            <div className="mt-6 text-center">
+
+              <p className="text-xs text-slate-400">
+                🔒 Secure business document management
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      {/* Animations */}
+      <style>{`
+
+        .login-container {
+          animation: containerIn 0.6s ease-out;
+        }
+
+        .animate-slide-down {
+          animation: slideDown 0.7s ease-out;
+        }
+
+        .animate-slide-up {
+          animation: slideUp 0.8s ease-out;
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes containerIn {
+          from {
+            opacity: 0;
+            transform: scale(0.97);
+          }
+
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-15px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateX(15px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+      `}</style>
+
+    </div>
+  );
+}
+
+
+/* ================= FEATURE ================= */
+
+function Feature({ icon, title }) {
+  return (
+    <div className="flex items-center gap-3">
+
+      <div
+        className="
+          flex
+          h-9
+          w-9
+          items-center
+          justify-center
+          rounded-md
+          bg-white/10
+          text-sm
+          transition
+          duration-300
+          hover:scale-110
+          hover:bg-white/20
+        "
+      >
+        {icon}
+      </div>
+
+      <span className="text-sm font-medium text-blue-50">
+        {title}
+      </span>
+
+    </div>
+  );
+}
