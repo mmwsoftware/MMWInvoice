@@ -127,6 +127,7 @@ export default function InvoicePreview({
           >
             {/* Left: Document Summary Card */}
             <div
+              className="prev-summary-card"
               style={{
                 backgroundColor: "#ffffff",
                 borderRadius: "18px",
@@ -305,6 +306,11 @@ export default function InvoicePreview({
         @media (max-width: 900px) {
           .prev-grid {
             grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+          .prev-summary-card {
+            position: static !important;
+            width: 100% !important;
           }
         }
       `}</style>

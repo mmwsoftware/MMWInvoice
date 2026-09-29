@@ -31,7 +31,11 @@ export default function HistoryFilters({
             backgroundColor: "#f1f5f9",
             borderRadius: "12px",
             padding: "4px",
+            maxWidth: "100%",
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
           }}
+          className="hf-tabs-scroll"
         >
           {filters.map((filter) => (
             <button

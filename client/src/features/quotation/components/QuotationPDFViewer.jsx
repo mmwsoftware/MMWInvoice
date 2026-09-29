@@ -46,10 +46,13 @@ export default function QuotationPDFViewer({
           color: "#ffffff",
           userSelect: "none",
           zIndex: 10,
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          gap: "16px",
         }}
       >
         {/* Left: Document Info */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", flexShrink: 0 }}>
           <span style={{ fontSize: "12px", fontWeight: 700, color: "#93c5fd" }}>
             SALES QUOTATION
           </span>
@@ -60,7 +63,7 @@ export default function QuotationPDFViewer({
         </div>
 
         {/* Center: Zoom Controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
           <button onClick={handleZoomOut} className="qpdf-tool-btn" title="Zoom Out">
             −
           </button>
@@ -83,7 +86,7 @@ export default function QuotationPDFViewer({
         </div>
 
         {/* Right: Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
           <button onClick={handleDownload} className="qpdf-tool-btn" title="Download">
             <svg style={{ height: "17px", width: "17px" }} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -107,6 +110,8 @@ export default function QuotationPDFViewer({
           display: "flex",
           justifyContent: "center",
           backgroundColor: "#525659",
+          scrollBehavior: "smooth",
+          WebkitOverflowScrolling: "touch",
         }}
       >
         <div

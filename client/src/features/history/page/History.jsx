@@ -97,6 +97,7 @@ export default function History() {
 
   return (
     <div
+      className="history-container"
       style={{
         maxWidth: "1280px",
         margin: "0 auto",
@@ -152,6 +153,14 @@ export default function History() {
         totalPages={totalPages}
         setCurrentPage={setCurrentPage}
       />
+
+      <style>{`
+        @media (max-width: 640px) {
+          .history-container {
+            padding: 20px 14px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

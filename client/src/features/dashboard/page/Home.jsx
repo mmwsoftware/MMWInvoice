@@ -17,6 +17,7 @@ export default function Home() {
 
   return (
     <div
+      className="home-container"
       style={{
         maxWidth: "1280px",
         margin: "0 auto",
@@ -75,6 +76,11 @@ export default function Home() {
         .animate-wave {
           animation: wave 1.8s ease-in-out;
           transform-origin: 70% 70%;
+        }
+        @media (max-width: 640px) {
+          .home-container {
+            padding: 20px 14px !important;
+          }
         }
       `}</style>
     </div>

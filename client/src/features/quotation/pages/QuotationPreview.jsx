@@ -115,6 +115,7 @@ export default function QuotationPreview({
           >
             {/* Left: Sticky Document Summary Card */}
             <div
+              className="qprev-summary-card"
               style={{
                 backgroundColor: "#ffffff",
                 borderRadius: "18px",
@@ -293,6 +294,11 @@ export default function QuotationPreview({
         @media (max-width: 900px) {
           .qprev-grid {
             grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+          .qprev-summary-card {
+            position: static !important;
+            width: 100% !important;
           }
         }
       `}</style>

@@ -39,6 +39,7 @@ export default function Navbar() {
       }}
     >
       <div
+        className="navbar-container"
         style={{
           maxWidth: "1280px",
           margin: "0 auto",
@@ -293,6 +294,16 @@ export default function Navbar() {
         @keyframes dropdownIn {
           from { opacity: 0; transform: translateY(-8px) scale(0.96); }
           to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @media (max-width: 640px) {
+          .nav-link {
+            padding: 6px 10px !important;
+            font-size: 13px !important;
+          }
+          .navbar-container {
+            padding: 0 12px !important;
+          }
         }
       `}</style>
     </nav>

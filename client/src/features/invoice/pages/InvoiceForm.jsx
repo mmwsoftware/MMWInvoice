@@ -246,6 +246,7 @@ export default function InvoiceForm() {
       >
         {/* Left Step Pills */}
         <div
+          className="inv-step-sidebar"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -495,12 +496,28 @@ export default function InvoiceForm() {
         @media (max-width: 840px) {
           .inv-layout-grid {
             grid-template-columns: 1fr !important;
+            gap: 16px !important;
           }
           .inv-grid-2 {
             grid-template-columns: 1fr !important;
           }
           .inv-stepper-line {
-            width: 24px !important;
+            width: 20px !important;
+          }
+          .inv-card {
+            padding: 20px 16px !important;
+          }
+          .inv-step-sidebar {
+            position: static !important;
+            flex-direction: row !important;
+            overflow-x: auto !important;
+            padding-bottom: 4px !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .inv-step-item {
+            padding: 8px 12px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
           }
         }
       `}</style>

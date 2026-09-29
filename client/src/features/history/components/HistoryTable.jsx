@@ -25,8 +25,8 @@ export default function HistoryTable({
           transition: "all 0.5s ease-out 0.15s",
         }}
       >
-        <div style={{ overflowX: "auto", minHeight: "380px" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", minHeight: "380px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "850px" }}>
             <thead>
               <tr
                 style={{
@@ -35,13 +35,13 @@ export default function HistoryTable({
                   height: "45px",
                 }}
               >
-                <th className="ht-th">Document Type</th>
-                <th className="ht-th">Document No.</th>
-                <th className="ht-th">Customer</th>
-                <th className="ht-th">Date & Time</th>
-                <th className="ht-th">Amount</th>
-                <th className="ht-th">Status</th>
-                <th className="ht-th">Actions</th>
+                <th className="ht-th" style={{ width: "17%" }}>Document Type</th>
+                <th className="ht-th" style={{ width: "16%" }}>Document No.</th>
+                <th className="ht-th" style={{ width: "23%" }}>Customer</th>
+                <th className="ht-th" style={{ width: "18%" }}>Date & Time</th>
+                <th className="ht-th" style={{ width: "12%" }}>Amount</th>
+                <th className="ht-th" style={{ width: "8%" }}>Status</th>
+                <th className="ht-th" style={{ width: "6%", textAlign: "center" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -326,15 +326,21 @@ export default function HistoryTable({
           to { opacity: 1; transform: translateY(0); }
         }
         .ht-th {
-          padding: 14px 20px;
+          padding: 12px 14px;
           text-align: left;
           font-size: 11px;
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 0.06em;
+          letter-spacing: 0.05em;
           color: #94a3b8;
+          white-space: nowrap;
+          box-sizing: border-box;
         }
-        .ht-td { padding: 14px 20px; }
+        .ht-td {
+          padding: 12px 16px;
+          white-space: nowrap;
+          box-sizing: border-box;
+        }
         .ht-row {
           height: 67px;
         }

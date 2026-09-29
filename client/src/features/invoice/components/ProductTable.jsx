@@ -60,39 +60,41 @@ export default function ProductTable({
       <div
         style={{
           overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
           border: "1px solid #e2e8f0",
           borderRadius: "14px",
           backgroundColor: "#ffffff",
           marginBottom: "20px",
         }}
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "720px" }}>
           <thead>
             <tr
               style={{
                 backgroundColor: "#f8fafc",
                 borderBottom: "1px solid #e2e8f0",
+                height: "44px",
               }}
             >
-              <th className="prod-th" style={{ width: "50px", textAlign: "center" }}>
+              <th className="prod-th" style={{ width: "48px", textAlign: "center" }}>
                 S.No.
               </th>
-              <th className="prod-th" style={{ minWidth: "220px" }}>
+              <th className="prod-th" style={{ width: "35%" }}>
                 Product Description
               </th>
-              <th className="prod-th" style={{ width: "120px" }}>
+              <th className="prod-th" style={{ width: "15%" }}>
                 HSN Code
               </th>
-              <th className="prod-th" style={{ width: "90px", textAlign: "center" }}>
+              <th className="prod-th" style={{ width: "11%", textAlign: "center" }}>
                 Quantity
               </th>
-              <th className="prod-th" style={{ width: "140px", textAlign: "right" }}>
+              <th className="prod-th" style={{ width: "18%", textAlign: "right" }}>
                 Rate Per Unit (₹)
               </th>
-              <th className="prod-th" style={{ width: "140px", textAlign: "right" }}>
+              <th className="prod-th" style={{ width: "16%", textAlign: "right" }}>
                 Amount (₹)
               </th>
-              <th className="prod-th" style={{ width: "50px", textAlign: "center" }}>
+              <th className="prod-th" style={{ width: "44px", textAlign: "center" }}>
                 {" "}
               </th>
             </tr>
@@ -415,17 +417,18 @@ export default function ProductTable({
 
       <style>{`
         .prod-th {
-          padding: 12px 14px;
+          padding: 12px 8px;
           text-align: left;
           font-size: 12px;
           font-weight: 600;
-          color: "#475569";
+          color: #475569;
           letter-spacing: 0.02em;
         }
         .prod-td {
-          padding: 8px 10px;
+          padding: 8px 6px;
         }
         .inv-table-input {
+          box-sizing: border-box;
           width: 100%;
           height: 38px;
           padding: 0 10px;

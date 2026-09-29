@@ -90,23 +90,23 @@ export default function RecentDocuments({ mounted }) {
             backgroundColor: "#ffffff",
           }}
         >
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr
-                  style={{
-                    borderBottom: "1px solid #f1f5f9",
-                    backgroundColor: "#f8fafc",
-                  }}
-                >
-                  <th className="rd-th">Document Type</th>
-                  <th className="rd-th">Document No.</th>
-                  <th className="rd-th">Customer</th>
-                  <th className="rd-th">Date & Time</th>
-                  <th className="rd-th">Amount</th>
-                  <th className="rd-th">Status</th>
-                </tr>
-              </thead>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "750px" }}>
+            <thead>
+              <tr
+                style={{
+                  borderBottom: "1px solid #f1f5f9",
+                  backgroundColor: "#f8fafc",
+                }}
+              >
+                <th className="rd-th" style={{ width: "18%" }}>Document Type</th>
+                <th className="rd-th" style={{ width: "18%" }}>Document No.</th>
+                <th className="rd-th" style={{ width: "26%" }}>Customer</th>
+                <th className="rd-th" style={{ width: "20%" }}>Date & Time</th>
+                <th className="rd-th" style={{ width: "10%" }}>Amount</th>
+                <th className="rd-th" style={{ width: "8%" }}>Status</th>
+              </tr>
+            </thead>
               <tbody>
                 {recentDocs.map((doc, idx) => (
                   <tr

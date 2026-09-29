@@ -51,42 +51,44 @@ export default function QuotationProductTable({
       <div
         style={{
           overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
           border: "1px solid #e2e8f0",
           borderRadius: "14px",
           backgroundColor: "#ffffff",
           marginBottom: "20px",
         }}
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "750px" }}>
           <thead>
             <tr
               style={{
                 backgroundColor: "#f8fafc",
                 borderBottom: "1px solid #e2e8f0",
+                height: "44px",
               }}
             >
-              <th className="qprod-th" style={{ width: "45px", textAlign: "center" }}>
+              <th className="qprod-th" style={{ width: "44px", textAlign: "center" }}>
                 S.No.
               </th>
-              <th className="qprod-th" style={{ minWidth: "220px" }}>
+              <th className="qprod-th" style={{ width: "30%" }}>
                 Description
               </th>
-              <th className="qprod-th" style={{ width: "110px" }}>
+              <th className="qprod-th" style={{ width: "14%" }}>
                 HSN/SAC Code
               </th>
-              <th className="qprod-th" style={{ width: "85px" }}>
+              <th className="qprod-th" style={{ width: "10%" }}>
                 UOM
               </th>
-              <th className="qprod-th" style={{ width: "80px", textAlign: "center" }}>
+              <th className="qprod-th" style={{ width: "8%", textAlign: "center" }}>
                 Qty
               </th>
-              <th className="qprod-th" style={{ width: "130px", textAlign: "right" }}>
+              <th className="qprod-th" style={{ width: "17%", textAlign: "right" }}>
                 Rate Per Unit (₹)
               </th>
-              <th className="qprod-th" style={{ width: "130px", textAlign: "right" }}>
+              <th className="qprod-th" style={{ width: "17%", textAlign: "right" }}>
                 Amount (INR)
               </th>
-              <th className="qprod-th" style={{ width: "45px", textAlign: "center" }}>
+              <th className="qprod-th" style={{ width: "44px", textAlign: "center" }}>
                 {" "}
               </th>
             </tr>
@@ -360,7 +362,7 @@ export default function QuotationProductTable({
 
       <style>{`
         .qprod-th {
-          padding: 12px 14px;
+          padding: 12px 6px;
           text-align: left;
           font-size: 12px;
           font-weight: 600;
@@ -368,12 +370,13 @@ export default function QuotationProductTable({
           letter-spacing: 0.02em;
         }
         .qprod-td {
-          padding: 8px 10px;
+          padding: 8px 5px;
         }
         .quot-table-input {
+          box-sizing: border-box;
           width: 100%;
           height: 38px;
-          padding: 0 10px;
+          padding: 0 8px;
           font-size: 13px;
           color: #1e293b;
           border: 1px solid #e2e8f0;

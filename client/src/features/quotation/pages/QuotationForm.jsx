@@ -245,6 +245,7 @@ export default function QuotationForm() {
       >
         {/* Left Sticky Step Pills */}
         <div
+          className="quot-step-sidebar"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -470,12 +471,28 @@ export default function QuotationForm() {
         @media (max-width: 840px) {
           .quot-layout-grid {
             grid-template-columns: 1fr !important;
+            gap: 16px !important;
           }
           .quot-grid-2 {
             grid-template-columns: 1fr !important;
           }
           .quot-stepper-line {
-            width: 24px !important;
+            width: 20px !important;
+          }
+          .quot-card {
+            padding: 20px 16px !important;
+          }
+          .quot-step-sidebar {
+            position: static !important;
+            flex-direction: row !important;
+            overflow-x: auto !important;
+            padding-bottom: 4px !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .quot-step-item {
+            padding: 8px 12px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
           }
         }
       `}</style>
