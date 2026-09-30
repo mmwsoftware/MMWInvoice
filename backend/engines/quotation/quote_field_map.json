@@ -1,0 +1,712 @@
+{
+  "document": "Quotation - Maxmoc Motor Works",
+  "template": "original_quotation.pdf",
+  "units": "PDF points, origin TOP-LEFT; baseline measured from the original",
+  "pages": 15,
+  "dynamic_pages": [
+    2,
+    9
+  ],
+  "fields": [
+    {
+      "id": "p2_date",
+      "page": 2,
+      "kind": "dynamic",
+      "align": "right",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 143.46,
+      "ax0": 479.66,
+      "ax1": 550.28,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "date, dd/mm/yy; right edge = text-block margin",
+      "orig_text": "Date: 29/01/26",
+      "redact": [
+        479.36,
+        133.34,
+        550.58,
+        146.56
+      ]
+    },
+    {
+      "id": "p2_subject",
+      "page": 2,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.3304004669,
+      "baseline": 299.063720839,
+      "ax0": 72.7074966431,
+      "ax1": 550.0,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "subject line; static prefix plus dynamic DG capacity/quantity",
+      "orig_text": "Subject : MMW Retrofit Emission Control Device (RECD) for 320KVA DG Set - 1 Nos.",
+      "redact": [
+        72.407,
+        287.7618,
+        550.3,
+        305.283
+      ]
+    },
+    {
+      "id": "p2_name",
+      "page": 2,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 162.91,
+      "ax0": 72.71,
+      "ax1": 271.83,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "customer name (line 0)",
+      "orig_text": "Gainwell Commosales Private Limitted,",
+      "redact": [
+        72.41,
+        152.79,
+        272.13,
+        166.01
+      ]
+    },
+    {
+      "id": "p2_addr1",
+      "page": 2,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 182.36,
+      "ax0": 72.71,
+      "ax1": 158.68,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "address line 1",
+      "orig_text": "1C-1 Udyog Vihar,",
+      "redact": [
+        72.41,
+        172.24,
+        158.98,
+        185.46
+      ]
+    },
+    {
+      "id": "p2_addr2",
+      "page": 2,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 201.81,
+      "ax0": 72.71,
+      "ax1": 242.16,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "address line 2",
+      "orig_text": "Ecotech-II Gautam Buddh Nagar,",
+      "redact": [
+        72.41,
+        191.69,
+        242.46,
+        204.91
+      ]
+    },
+    {
+      "id": "p2_addr3",
+      "page": 2,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 221.27,
+      "ax0": 72.71,
+      "ax1": 146.93,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "address line 3",
+      "orig_text": "Greater Noida,",
+      "redact": [
+        72.41,
+        211.15,
+        147.23,
+        224.37
+      ]
+    },
+    {
+      "id": "p2_addr4",
+      "page": 2,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 240.72,
+      "ax0": 72.71,
+      "ax1": 191.45,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "address line 4",
+      "orig_text": "Uttar Pradesh - 201 306.",
+      "redact": [
+        72.41,
+        230.6,
+        191.75,
+        243.82
+      ]
+    },
+    {
+      "id": "p9_date",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Medium",
+      "size": 10.0,
+      "baseline": 144.83,
+      "ax0": 462.52,
+      "ax1": 544.08,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "dd Month yyyy (Poppins Medium 10)",
+      "orig_text": "29 January 2026",
+      "redact": [
+        462.22,
+        135.03,
+        544.38,
+        147.83
+      ]
+    },
+    {
+      "id": "p9_quote_no",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Medium",
+      "size": 10.0,
+      "baseline": 163.83,
+      "ax0": 463.84,
+      "ax1": 546.33,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "quote number",
+      "orig_text": "MAX/2025/S0079",
+      "redact": [
+        463.54,
+        154.03,
+        546.63,
+        166.83
+      ]
+    },
+    {
+      "id": "p9_client_name",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 284.97,
+      "ax0": 179.69,
+      "ax1": 377.0,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "company name",
+      "orig_text": "Gainwell Commosales Private Limitted",
+      "redact": [
+        179.39,
+        274.85,
+        377.3,
+        288.07
+      ]
+    },
+    {
+      "id": "p9_addr1",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 306.77,
+      "ax0": 179.69,
+      "ax1": 510.07,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "address line 1",
+      "orig_text": "1C-1 Udyog Vihar Ecotech-II Gautam Buddh Nagar,Greater Noida,",
+      "redact": [
+        179.39,
+        296.65,
+        510.37,
+        309.87
+      ]
+    },
+    {
+      "id": "p9_addr2",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 328.58,
+      "ax0": 179.69,
+      "ax1": 296.66,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "address line 2",
+      "orig_text": "Uttar Pradesh - 201 306",
+      "redact": [
+        179.39,
+        318.46,
+        296.96,
+        331.68
+      ]
+    },
+    {
+      "id": "p9_client_gstin",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 350.39,
+      "ax0": 179.69,
+      "ax1": 270.36,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "client GSTIN (row moves down 21.8pt if address has 3 lines)",
+      "orig_text": "21AHYPR9559C1ZQ",
+      "redact": [
+        179.39,
+        340.27,
+        270.66,
+        353.49
+      ]
+    },
+    {
+      "id": "p9_gstin_label",
+      "page": 9,
+      "kind": "movable",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 350.39,
+      "ax0": 55.98,
+      "ax1": 84.9,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "static label that moves with the GSTIN row",
+      "orig_text": "GSTIN",
+      "redact": [
+        55.68,
+        340.27,
+        85.2,
+        353.49
+      ]
+    },
+    {
+      "id": "p9_gstin_colon",
+      "page": 9,
+      "kind": "movable",
+      "align": "left",
+      "font": "Poppins-Regular",
+      "size": 10.33,
+      "baseline": 350.39,
+      "ax0": 163.37,
+      "ax1": 165.34,
+      "color": [
+        0.695,
+        0.672,
+        0.637,
+        0.738
+      ],
+      "notes": "static colon that moves with the GSTIN row",
+      "orig_text": ":",
+      "redact": [
+        163.07,
+        340.27,
+        165.64,
+        353.49
+      ]
+    },
+    {
+      "id": "p9_desc_l1",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Calibri",
+      "size": 9.65,
+      "baseline": 478.82,
+      "ax0": 95.68,
+      "ax1": 299.3,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "description line 1 (wrapped paragraph)",
+      "orig_text": "Cataly�c Conversion Technology of RECD Suitable to",
+      "redact": [
+        95.38,
+        469.36,
+        301.76,
+        481.71
+      ]
+    },
+    {
+      "id": "p9_desc_l2",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Calibri",
+      "size": 9.65,
+      "baseline": 489.83,
+      "ax0": 95.68,
+      "ax1": 277.48,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "description line 2",
+      "orig_text": "320kvA DG Set Including back pressure sensor,",
+      "redact": [
+        95.38,
+        480.37,
+        279.94,
+        492.72
+      ]
+    },
+    {
+      "id": "p9_desc_l3",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Calibri",
+      "size": 9.65,
+      "baseline": 500.83,
+      "ax0": 95.68,
+      "ax1": 302.64,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "description line 3",
+      "orig_text": "Temprature sensor, Telema�cs and monitoring panel",
+      "redact": [
+        95.38,
+        491.37,
+        302.94,
+        503.72
+      ]
+    },
+    {
+      "id": "p9_desc_l4",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Calibri",
+      "size": 9.65,
+      "baseline": 511.83,
+      "ax0": 95.68,
+      "ax1": 282.3,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "description line 4",
+      "orig_text": "( Including Logis�cs and Installa�on) with Ac�ve",
+      "redact": [
+        95.38,
+        502.37,
+        284.76,
+        514.73
+      ]
+    },
+    {
+      "id": "p9_desc_l5",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Calibri",
+      "size": 9.65,
+      "baseline": 522.84,
+      "ax0": 95.68,
+      "ax1": 148.16,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "description line 5",
+      "orig_text": "Regenera�on",
+      "redact": [
+        95.38,
+        513.38,
+        148.46,
+        525.74
+      ]
+    },
+    {
+      "id": "p9_item_sr",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "center",
+      "font": "Calibri",
+      "size": 9.65,
+      "baseline": 480.92,
+      "ax0": 75.63,
+      "ax1": 80.49,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "S.No",
+      "orig_text": "1",
+      "redact": [
+        75.33,
+        471.46,
+        80.79,
+        483.81
+      ]
+    },
+    {
+      "id": "p9_item_hsn",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "center",
+      "font": "Calibri",
+      "size": 9.65,
+      "baseline": 482.59,
+      "ax0": 315.99,
+      "ax1": 354.92,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "HSN/SAC",
+      "orig_text": "84041000",
+      "redact": [
+        315.69,
+        473.13,
+        355.22,
+        485.48
+      ]
+    },
+    {
+      "id": "p9_item_uom",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "center",
+      "font": "Calibri",
+      "size": 9.65,
+      "baseline": 482.59,
+      "ax0": 377.06,
+      "ax1": 392.06,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "UOM",
+      "orig_text": "Nos",
+      "redact": [
+        376.76,
+        473.13,
+        392.36,
+        485.48
+      ]
+    },
+    {
+      "id": "p9_item_qty",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "center",
+      "font": "Calibri",
+      "size": 9.65,
+      "baseline": 482.59,
+      "ax0": 408.51,
+      "ax1": 413.38,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "Qty",
+      "orig_text": "1",
+      "redact": [
+        408.21,
+        473.13,
+        413.68,
+        485.48
+      ]
+    },
+    {
+      "id": "p9_item_rate",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "right",
+      "font": "Calibri",
+      "size": 9.65,
+      "baseline": 482.59,
+      "ax0": 431.34,
+      "ax1": 477.48,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "rate, right-aligned",
+      "orig_text": "4,00,000.00",
+      "redact": [
+        431.04,
+        473.13,
+        477.78,
+        485.48
+      ]
+    },
+    {
+      "id": "p9_item_amount",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "right",
+      "font": "Calibri",
+      "size": 9.65,
+      "baseline": 482.59,
+      "ax0": 493.66,
+      "ax1": 539.8,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "amount, right-aligned",
+      "orig_text": "4,00,000.00",
+      "redact": [
+        493.36,
+        473.13,
+        540.1,
+        485.48
+      ]
+    },
+    {
+      "id": "p9_total_value",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "right",
+      "font": "Calibri-Bold",
+      "size": 9.65,
+      "baseline": 573.31,
+      "ax0": 489.15,
+      "ax1": 535.85,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "total (Calibri Bold)",
+      "orig_text": "4,00,000.00",
+      "redact": [
+        488.85,
+        563.85,
+        536.15,
+        576.2
+      ]
+    },
+    {
+      "id": "p9_words",
+      "page": 9,
+      "kind": "dynamic",
+      "align": "left",
+      "font": "Poppins-SemiBold",
+      "size": 10.0,
+      "baseline": 646.14,
+      "ax0": 175.17,
+      "ax1": 258.65,
+      "color": [
+        0.746,
+        0.676,
+        0.668,
+        0.898
+      ],
+      "notes": "amount in words (Poppins SemiBold 10)",
+      "orig_text": "Four  Lakhs Only.",
+      "redact": [
+        174.87,
+        636.34,
+        258.95,
+        649.14
+      ]
+    }
+  ]
+}

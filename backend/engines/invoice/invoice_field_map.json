@@ -1,0 +1,1115 @@
+{
+ "document": "Tax Invoice - Maxmoc Motor Works",
+ "source_file": "Invoice_No_73_Gainwell_Commosales_Private_Limitted.pdf",
+ "units": "PDF points, origin TOP-LEFT (pdfplumber convention). Convert y for pdf-lib/ReportLab: y_pdf = page_height - y",
+ "pages": [
+  {
+   "n": 1,
+   "width": 842.003,
+   "height": 594.992,
+   "role": "mostly static + dynamic"
+  },
+  {
+   "n": 2,
+   "width": 842.003,
+   "height": 594.992,
+   "role": "mostly static + IRN/QR block"
+  }
+ ],
+ "table_geometry_p1": {
+  "columns": {
+   "sr": [
+    20.7,
+    69.7
+   ],
+   "description": [
+    69.7,
+    413.9
+   ],
+   "hsn": [
+    413.9,
+    509.5
+   ],
+   "qty": [
+    509.5,
+    558.8
+   ],
+   "rate": [
+    558.8,
+    709.4
+   ],
+   "amount": [
+    709.4,
+    821.4
+   ]
+  },
+  "header_row": [
+   227.7,
+   242.5
+  ],
+  "item_area": [
+   242.5,
+   323.9
+  ],
+  "subtotal_row": [
+   324.5,
+   340.1
+  ],
+  "tax_row": [
+   340.7,
+   355.6
+  ],
+  "total_row": [
+   356.2,
+   374.4
+  ],
+  "item_area_height": 81.4,
+  "est_rows_at_11pt": 5
+ },
+ "fonts": {
+  "embedded_subsets_only": true,
+  "note": "Subsets contain only glyphs already used, so full font files are required",
+  "missing_glyphs": {
+   "MyriadPro-Regular": "3 9",
+   "TrebuchetMS-Bold": "4",
+   "Poppins-SemiBold": "2 4 5"
+  },
+  "sources": {
+   "Poppins Light/Regular/Medium": "installed here",
+   "Poppins SemiBold": "add Poppins-SemiBold.ttf (free, Google Fonts)",
+   "Helvetica": "use built-in Helvetica (identical metrics)",
+   "MyriadPro-Regular": "needs full font from your Adobe/Illustrator machine, or substitute Source Sans 3",
+   "TrebuchetMS + Bold": "needs trebuc.ttf/trebucbd.ttf from a Windows machine (check licence for server embedding)",
+   "TimesNewRomanPS-BoldMT": "static text only, not needed for dynamic fields"
+  }
+ },
+ "colours": "Item row and page-2 text use CMYK rich black, not pure black. Match with CMYK fills (pdf-lib cmyk()).",
+ "fields": [
+  {
+   "id": "copy_tick",
+   "page": 1,
+   "label": "Copy type tick (Original / Duplicate / Triplicate)",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 483.1,
+    "top": 78.4,
+    "x1": 490.1,
+    "bottom": 87.4
+   },
+   "font": "image",
+   "size": 9,
+   "align": "-",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "user option: copy_type",
+   "notes": "Raster tick sits beside 'Original'. Moves down 11.9pt per copy (81.3 / 93.2 / 105.1). Remove image, redraw as vector check."
+  },
+  {
+   "id": "invoice_no",
+   "page": 1,
+   "label": "Tax Invoice No",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 593.9,
+    "top": 119.7,
+    "x1": 639.1,
+    "bottom": 127.2
+   },
+   "font": "Poppins-Regular",
+   "size": 6.0,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "auto number series",
+   "baseline": 122.25,
+   "ax0": 593.88,
+   "ax1": 639.12,
+   "orig_text": "MAX/2025/0073",
+   "redact": [
+    593.58,
+    116.37,
+    639.42,
+    124.05
+   ]
+  },
+  {
+   "id": "invoice_date",
+   "page": 1,
+   "label": "Date",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 593.9,
+    "top": 131.7,
+    "x1": 622.7,
+    "bottom": 139.2
+   },
+   "font": "Poppins-Regular",
+   "size": 6.0,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "user (default today)",
+   "notes": "Format DD.MM.YYYY",
+   "baseline": 134.25,
+   "ax0": 593.88,
+   "ax1": 622.74,
+   "orig_text": "03.01.2025",
+   "redact": [
+    593.58,
+    128.37,
+    623.04,
+    136.05
+   ]
+  },
+  {
+   "id": "po_no",
+   "page": 1,
+   "label": "Your PO / WO No",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 593.9,
+    "top": 143.7,
+    "x1": 624.6,
+    "bottom": 151.2
+   },
+   "font": "Poppins-Regular",
+   "size": 6.0,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "user",
+   "baseline": 146.25,
+   "ax0": 593.88,
+   "ax1": 624.64,
+   "orig_text": "5110060412",
+   "redact": [
+    593.58,
+    140.37,
+    624.94,
+    148.05
+   ]
+  },
+  {
+   "id": "po_date",
+   "page": 1,
+   "label": "PO Date",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 593.9,
+    "top": 155.7,
+    "x1": 622.6,
+    "bottom": 163.2
+   },
+   "font": "Poppins-Regular",
+   "size": 6.0,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "user",
+   "baseline": 158.25,
+   "ax0": 593.88,
+   "ax1": 622.6,
+   "orig_text": "02.01.2025",
+   "redact": [
+    593.58,
+    152.37,
+    622.9,
+    160.05
+   ]
+  },
+  {
+   "id": "engineer_name",
+   "page": 1,
+   "label": "Project Engg. Name",
+   "kind": "default",
+   "bbox": {
+    "x0": 593.9,
+    "top": 167.7,
+    "x1": 634.2,
+    "bottom": 175.2
+   },
+   "font": "Poppins-Regular",
+   "size": 6.0,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "settings default",
+   "baseline": 170.25,
+   "ax0": 593.88,
+   "ax1": 634.23,
+   "orig_text": "Sathya Bama",
+   "redact": [
+    593.58,
+    164.37,
+    634.53,
+    172.05
+   ]
+  },
+  {
+   "id": "engineer_email",
+   "page": 1,
+   "label": "E-Mail id",
+   "kind": "default",
+   "bbox": {
+    "x0": 593.9,
+    "top": 179.7,
+    "x1": 654.7,
+    "bottom": 187.2
+   },
+   "font": "Poppins-Regular",
+   "size": 6.0,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "settings default",
+   "baseline": 182.25,
+   "ax0": 593.88,
+   "ax1": 654.71,
+   "orig_text": "sathya@maxmoc.in",
+   "redact": [
+    593.58,
+    176.37,
+    655.01,
+    184.05
+   ]
+  },
+  {
+   "id": "engineer_contact",
+   "page": 1,
+   "label": "Contact No",
+   "kind": "default",
+   "bbox": {
+    "x0": 593.9,
+    "top": 191.7,
+    "x1": 629.6,
+    "bottom": 199.2
+   },
+   "font": "Poppins-Regular",
+   "size": 6.0,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "settings default",
+   "baseline": 194.25,
+   "ax0": 593.88,
+   "ax1": 629.63,
+   "orig_text": "99528 23148",
+   "redact": [
+    593.58,
+    188.37,
+    629.93,
+    196.05
+   ]
+  },
+  {
+   "id": "country",
+   "page": 1,
+   "label": "Country",
+   "kind": "default",
+   "bbox": {
+    "x0": 593.9,
+    "top": 203.7,
+    "x1": 608.7,
+    "bottom": 211.2
+   },
+   "font": "Poppins-Regular",
+   "size": 6.0,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "default India",
+   "baseline": 206.25,
+   "ax0": 593.88,
+   "ax1": 608.67,
+   "orig_text": "India",
+   "redact": [
+    593.58,
+    200.37,
+    608.97,
+    208.05
+   ]
+  },
+  {
+   "id": "country_code",
+   "page": 1,
+   "label": "Country Code",
+   "kind": "default",
+   "bbox": {
+    "x0": 593.9,
+    "top": 215.7,
+    "x1": 599.2,
+    "bottom": 223.2
+   },
+   "font": "Poppins-Regular",
+   "size": 6.0,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "default 91",
+   "baseline": 218.25,
+   "ax0": 593.88,
+   "ax1": 599.25,
+   "orig_text": "91",
+   "redact": [
+    593.58,
+    212.37,
+    599.55,
+    220.05
+   ]
+  },
+  {
+   "id": "customer_name",
+   "page": 1,
+   "label": "Customer name",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 32.8,
+    "top": 137.9,
+    "x1": 186.8,
+    "bottom": 147.7
+   },
+   "font": "Poppins-SemiBold",
+   "size": 7.8,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "customer master",
+   "max_width": 375,
+   "baseline": 141.05,
+   "ax0": 32.83,
+   "ax1": 186.81,
+   "orig_text": "Gainwell Commosales Private Limitted,",
+   "redact": [
+    32.53,
+    133.41,
+    187.11,
+    143.39
+   ]
+  },
+  {
+   "id": "customer_addr1",
+   "page": 1,
+   "label": "Address line 1",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 32.8,
+    "top": 149.8,
+    "x1": 200.3,
+    "bottom": 158.3
+   },
+   "font": "Poppins-Light",
+   "size": 6.8,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "customer master",
+   "max_width": 375,
+   "baseline": 152.74,
+   "ax0": 32.83,
+   "ax1": 200.31,
+   "orig_text": "1C-1 Udyog Vihar Ecotech-II Gautam Buddh Nagar,",
+   "redact": [
+    32.53,
+    146.07,
+    200.61,
+    154.78
+   ]
+  },
+  {
+   "id": "customer_addr2",
+   "page": 1,
+   "label": "Address line 2",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 32.8,
+    "top": 161.4,
+    "x1": 81.3,
+    "bottom": 169.9
+   },
+   "font": "Poppins-Light",
+   "size": 6.8,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "customer master",
+   "max_width": 375,
+   "baseline": 164.41,
+   "ax0": 32.83,
+   "ax1": 81.34,
+   "orig_text": "Greater Noida,",
+   "redact": [
+    32.53,
+    157.75,
+    81.64,
+    166.45
+   ]
+  },
+  {
+   "id": "customer_addr3",
+   "page": 1,
+   "label": "Address line 3",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 32.8,
+    "top": 173.1,
+    "x1": 109.4,
+    "bottom": 181.6
+   },
+   "font": "Poppins-Light",
+   "size": 6.8,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "customer master",
+   "max_width": 375,
+   "notes": "Room for a 4th line at top=184.7 before 'State Code' at 198.4",
+   "baseline": 176.09,
+   "ax0": 32.83,
+   "ax1": 109.37,
+   "orig_text": "Uttar Pradesh - 201 306",
+   "redact": [
+    32.53,
+    169.43,
+    109.67,
+    178.13
+   ]
+  },
+  {
+   "id": "customer_state_code",
+   "page": 1,
+   "label": "State Code value (label 'State Code :' is static)",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 85.5,
+    "top": 198.4,
+    "x1": 94.2,
+    "bottom": 208.3
+   },
+   "font": "Poppins-SemiBold",
+   "size": 7.9,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "customer master",
+   "notes": "Original is one run 'State Code : 09'; split label/value",
+   "baseline": 201.58,
+   "ax0": 85.46,
+   "ax1": 94.17,
+   "orig_text": "09",
+   "redact": [
+    85.16,
+    193.84,
+    94.47,
+    203.95
+   ]
+  },
+  {
+   "id": "customer_gstin",
+   "page": 1,
+   "label": "GSTIN/UIN value (label is static)",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 84.9,
+    "top": 212.8,
+    "x1": 152.5,
+    "bottom": 222.7
+   },
+   "font": "Poppins-SemiBold",
+   "size": 7.9,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "customer master",
+   "baseline": 216.06,
+   "ax0": 84.94,
+   "ax1": 152.45,
+   "orig_text": "09AAFCG8736M1ZX",
+   "redact": [
+    84.64,
+    208.32,
+    152.75,
+    218.43
+   ]
+  },
+  {
+   "id": "item_sr",
+   "page": 1,
+   "label": "Sr.No.",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 45.5,
+    "top": 266.9,
+    "x1": 51.1,
+    "bottom": 280.6
+   },
+   "font": "MyriadPro-Regular",
+   "size": 11,
+   "align": "center",
+   "color_cmyk": [
+    0.746,
+    0.676,
+    0.668,
+    0.898
+   ],
+   "source": "auto",
+   "notes": "col x 20.7-69.7",
+   "baseline": 275.2,
+   "ax0": 45.46,
+   "ax1": 51.11,
+   "orig_text": "1",
+   "redact": [
+    45.16,
+    264.42,
+    51.41,
+    278.5
+   ]
+  },
+  {
+   "id": "item_desc",
+   "page": 1,
+   "label": "Product Description",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 186.5,
+    "top": 266.9,
+    "x1": 285.5,
+    "bottom": 280.6
+   },
+   "font": "MyriadPro-Regular",
+   "size": 11,
+   "align": "center",
+   "color_cmyk": [
+    0.746,
+    0.676,
+    0.668,
+    0.898
+   ],
+   "source": "product master / user",
+   "max_width": 330,
+   "notes": "col x 69.7-413.9, centred",
+   "baseline": 275.2,
+   "ax0": 186.52,
+   "ax1": 280.75,
+   "orig_text": "RECD 125kvA DG set",
+   "redact": [
+    186.22,
+    264.42,
+    288.05,
+    278.5
+   ]
+  },
+  {
+   "id": "item_hsn",
+   "page": 1,
+   "label": "HSN Code",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 444.4,
+    "top": 268.2,
+    "x1": 489.5,
+    "bottom": 281.9
+   },
+   "font": "MyriadPro-Regular",
+   "size": 11,
+   "align": "center",
+   "color_cmyk": [
+    0.746,
+    0.676,
+    0.668,
+    0.898
+   ],
+   "source": "product master",
+   "notes": "col x 413.9-509.5",
+   "baseline": 276.47,
+   "ax0": 444.38,
+   "ax1": 489.53,
+   "orig_text": "84041000",
+   "redact": [
+    444.08,
+    265.69,
+    489.83,
+    279.77
+   ]
+  },
+  {
+   "id": "item_qty",
+   "page": 1,
+   "label": "Quantity + UOM",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 521.2,
+    "top": 268.2,
+    "x1": 551.2,
+    "bottom": 281.9
+   },
+   "font": "MyriadPro-Regular",
+   "size": 11,
+   "align": "center",
+   "color_cmyk": [
+    0.746,
+    0.676,
+    0.668,
+    0.898
+   ],
+   "source": "user",
+   "notes": "Original prints '1 Nos.,' with a stray comma. col x 509.5-558.8 is only 49pt wide",
+   "baseline": 276.47,
+   "ax0": 521.15,
+   "ax1": 551.19,
+   "orig_text": "1 Nos.,",
+   "redact": [
+    520.85,
+    265.69,
+    551.49,
+    279.77
+   ]
+  },
+  {
+   "id": "item_rate",
+   "page": 1,
+   "label": "Rate Per Unit",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 610.1,
+    "top": 268.3,
+    "x1": 662.0,
+    "bottom": 282.1
+   },
+   "font": "MyriadPro-Regular",
+   "size": 11,
+   "align": "center",
+   "color_cmyk": [
+    0.746,
+    0.676,
+    0.668,
+    0.898
+   ],
+   "source": "user",
+   "notes": "col x 558.8-709.4",
+   "baseline": 276.59,
+   "ax0": 610.07,
+   "ax1": 662.04,
+   "orig_text": "1,68,750.00",
+   "redact": [
+    609.77,
+    265.81,
+    662.34,
+    279.89
+   ]
+  },
+  {
+   "id": "item_amount",
+   "page": 1,
+   "label": "Line amount",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 739.7,
+    "top": 268.5,
+    "x1": 791.7,
+    "bottom": 282.2
+   },
+   "font": "MyriadPro-Regular",
+   "size": 11,
+   "align": "center",
+   "color_cmyk": [
+    0.746,
+    0.676,
+    0.668,
+    0.898
+   ],
+   "source": "computed = qty x rate",
+   "notes": "col x 709.4-821.4. Original shows 1,86,750 for a 1,68,750 rate (typo)",
+   "baseline": 276.71,
+   "ax0": 739.75,
+   "ax1": 791.72,
+   "orig_text": "1,86,750.00",
+   "redact": [
+    739.45,
+    265.93,
+    792.02,
+    280.01
+   ]
+  },
+  {
+   "id": "subtotal_value",
+   "page": 1,
+   "label": "Sub Total",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 736.1,
+    "top": 329.0,
+    "x1": 820.1,
+    "bottom": 341.5
+   },
+   "font": "TrebuchetMS-Bold",
+   "size": 10,
+   "align": "right",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "computed",
+   "notes": "Value + ' (INR)'. Right edge 820.1 leaves 1.3pt to the cell border: 8-digit amounts need shrink-to-fit",
+   "baseline": 336.3,
+   "ax0": 736.13,
+   "ax1": 820.09,
+   "orig_text": "1,68,750.00 (INR)",
+   "redact": [
+    735.83,
+    326.5,
+    820.39,
+    339.3
+   ]
+  },
+  {
+   "id": "tax_label",
+   "page": 1,
+   "label": "Tax label (IGST @ 18%)",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 647.8,
+    "top": 345.2,
+    "x1": 701.3,
+    "bottom": 357.7
+   },
+   "font": "TrebuchetMS-Bold",
+   "size": 10,
+   "align": "right",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "computed from state + rate",
+   "notes": "Becomes 'CGST @ 9%' + 'SGST @ 9%' for in-state (needs extra row)",
+   "baseline": 352.5,
+   "ax0": 647.8,
+   "ax1": 701.25,
+   "orig_text": "IGST @ 18%",
+   "redact": [
+    647.5,
+    342.7,
+    701.55,
+    355.5
+   ]
+  },
+  {
+   "id": "tax_value",
+   "page": 1,
+   "label": "Tax amount",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 745.5,
+    "top": 345.2,
+    "x1": 819.9,
+    "bottom": 357.7
+   },
+   "font": "TrebuchetMS-Bold",
+   "size": 10,
+   "align": "right",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "computed",
+   "baseline": 352.5,
+   "ax0": 745.48,
+   "ax1": 819.89,
+   "orig_text": "30,375.00 (INR)",
+   "redact": [
+    745.18,
+    342.7,
+    820.19,
+    355.5
+   ]
+  },
+  {
+   "id": "total_value",
+   "page": 1,
+   "label": "Total Amount",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 736.1,
+    "top": 360.7,
+    "x1": 820.1,
+    "bottom": 373.2
+   },
+   "font": "TrebuchetMS-Bold",
+   "size": 10,
+   "align": "right",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "computed",
+   "baseline": 368.03,
+   "ax0": 736.12,
+   "ax1": 820.08,
+   "orig_text": "1,99,125.00 (INR)",
+   "redact": [
+    735.82,
+    358.23,
+    820.38,
+    371.03
+   ]
+  },
+  {
+   "id": "amount_words",
+   "page": 1,
+   "label": "Amount in words (after static 'INR')",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 81.6,
+    "top": 400.7,
+    "x1": 341.2,
+    "bottom": 410.7
+   },
+   "font": "TrebuchetMS-Bold",
+   "size": 8,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "computed (Indian numbering)",
+   "max_width": 700,
+   "baseline": 406.51,
+   "ax0": 81.56,
+   "ax1": 341.21,
+   "orig_text": "One Lakh Ninety Nine Thousand One Hundred And Twenty Five Only.",
+   "redact": [
+    81.26,
+    398.67,
+    341.51,
+    408.91
+   ]
+  },
+  {
+   "id": "p2_invoice_no",
+   "page": 2,
+   "label": "Invoice No (value after 'Invoice No:')",
+   "kind": "hidden_purge",
+   "bbox": {
+    "x0": 161.3,
+    "top": 52.2,
+    "x1": 290.4,
+    "bottom": 74.7
+   },
+   "font": "Helvetica",
+   "size": 18,
+   "align": "left",
+   "color_cmyk": [
+    0.621,
+    0.543,
+    0.531,
+    0.27
+   ],
+   "source": "= invoice_no (page 1)",
+   "notes": "HIDDEN under a white box (x63.3-610.6, y38.8-131.2) in the original. Text is purged, never redrawn.",
+   "baseline": 61.5,
+   "ax0": 161.33,
+   "ax1": 290.4,
+   "orig_text": "MAX/2023/0322",
+   "redact": [
+    161.03,
+    43.86,
+    290.7,
+    66.9
+   ]
+  },
+  {
+   "id": "p2_ack_no",
+   "page": 2,
+   "label": "Acknowledgement Number",
+   "kind": "hidden_purge",
+   "bbox": {
+    "x0": 246.1,
+    "top": 94.9,
+    "x1": 329.5,
+    "bottom": 107.4
+   },
+   "font": "Helvetica",
+   "size": 10,
+   "align": "left",
+   "color_cmyk": [
+    0.746,
+    0.676,
+    0.668,
+    0.898
+   ],
+   "source": "e-invoice portal (IRP)",
+   "baseline": 100.09,
+   "ax0": 246.12,
+   "ax1": 329.52,
+   "orig_text": "143156906594265",
+   "redact": [
+    245.82,
+    90.29,
+    329.82,
+    103.09
+   ],
+   "notes": "HIDDEN under a white box (x63.3-610.6, y38.8-131.2) in the original. Text is purged, never redrawn."
+  },
+  {
+   "id": "p2_irn",
+   "page": 2,
+   "label": "E-Invoice IRN No",
+   "kind": "hidden_purge",
+   "bbox": {
+    "x0": 247.8,
+    "top": 118.3,
+    "x1": 600.8,
+    "bottom": 130.8
+   },
+   "font": "Helvetica",
+   "size": 10,
+   "align": "left",
+   "color_cmyk": [
+    0.746,
+    0.676,
+    0.668,
+    0.898
+   ],
+   "source": "e-invoice portal (IRP)",
+   "notes": "HIDDEN under a white box (x63.3-610.6, y38.8-131.2) in the original. Text is purged, never redrawn.",
+   "baseline": 123.52,
+   "ax0": 247.8,
+   "ax1": 600.8,
+   "orig_text": "4764da0321c9bb09a4e7c615db06184918c4d1bc539aa4d478c137194baf6f090",
+   "redact": [
+    247.5,
+    113.72,
+    601.1,
+    126.52
+   ]
+  },
+  {
+   "id": "p2_qr",
+   "page": 2,
+   "label": "QR code (3 stacked raster images)",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 166.2,
+    "top": 79.4,
+    "x1": 354.7,
+    "bottom": 267.9
+   },
+   "font": "image",
+   "size": null,
+   "align": "-",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "e-invoice portal (IRP)",
+   "notes": "Must be REMOVED from the template and replaced per invoice; never reuse"
+  },
+  {
+   "id": "p2_sign_date",
+   "page": 2,
+   "label": "Signature date (after 'Date :')",
+   "kind": "dynamic",
+   "bbox": {
+    "x0": 609.4,
+    "top": 426.4,
+    "x1": 638.3,
+    "bottom": 433.9
+   },
+   "font": "Poppins-Regular",
+   "size": 6.0,
+   "align": "left",
+   "color_cmyk": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "source": "= invoice_date",
+   "baseline": 429.0,
+   "ax0": 609.41,
+   "ax1": 638.27,
+   "orig_text": "03.01.2025",
+   "redact": [
+    609.11,
+    423.12,
+    638.57,
+    430.8
+   ]
+  }
+ ]
+}
