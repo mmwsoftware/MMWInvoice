@@ -1,16 +1,34 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function LoginForm() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!username.trim() || !password) {
+      setError("Please enter both username and password.");
+      return;
+    }
+
+    setError("");
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      await login(username, password);
+      navigate("/dashboard/home");
+    } catch (err) {
+      setError(err.message || "Login failed. Please check your credentials.");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -172,29 +190,66 @@ export default function LoginForm() {
             </div>
 
 
+            {/* Error Alert */}
+            {error && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "12px 14px",
+                  marginBottom: "20px",
+                  borderRadius: "10px",
+                  backgroundColor: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  color: "#b91c1c",
+                  fontSize: "13.5px",
+                  fontWeight: 500,
+                  animation: "fadeIn 0.2s ease-out",
+                }}
+              >
+                <svg
+                  style={{ height: "18px", width: "18px", flexShrink: 0 }}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+                  />
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
+
             {/* Form */}
             <form
               onSubmit={handleSubmit}
               className="space-y-5"
             >
 
-              {/* Email */}
+              {/* Username */}
               <div>
 
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Email Address
+                  Username
                 </label>
 
                 <div className="relative">
 
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-slate-400">
-                    ✉
+                    👤
                   </span>
 
                   <input
-                    type="email"
-                    placeholder="you@company.com"
+                    type="text"
+                    placeholder="Enter username (e.g. admin)"
                     required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     className="
                       h-12
                       w-full
@@ -234,6 +289,8 @@ export default function LoginForm() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="
                       h-12
                       w-full
@@ -269,37 +326,6 @@ export default function LoginForm() {
                   </button>
 
                 </div>
-
-              </div>
-
-
-              {/* Remember / Forgot */}
-              <div className="flex items-center justify-between">
-
-                <label className="flex items-center gap-2 cursor-pointer">
-
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 accent-blue-600"
-                  />
-
-                  <span className="text-sm text-slate-600">
-                    Remember me
-                  </span>
-
-                </label>
-
-                <button
-                  type="button"
-                  className="
-                    text-sm
-                    font-medium
-                    text-blue-600
-                    hover:text-blue-800
-                  "
-                >
-                  Forgot password?
-                </button>
 
               </div>
 

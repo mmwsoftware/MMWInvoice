@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "../../../context/AuthContext";
 import DocumentCards from "../components/DocumentCards";
 import RecentDocuments from "../components/RecentDocuments";
 
 export default function Home() {
   const [greeting, setGreeting] = useState("");
   const [mounted, setMounted] = useState(false);
+  const { user } = useAuth();
+  const displayName = user?.name || "Sathya";
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -41,7 +44,7 @@ export default function Home() {
             margin: 0,
           }}
         >
-          {greeting}, Vicky{" "}
+          {greeting}, {displayName}{" "}
           <span className="animate-wave" style={{ display: "inline-block" }}>
             👋
           </span>

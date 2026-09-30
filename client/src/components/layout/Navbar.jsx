@@ -1,10 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Navbar() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const displayName = user?.name || "Sathya";
+  const displayRole = user?.role || "Admin";
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -17,8 +23,9 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setShowDropdown(false);
+    await logout();
     navigate("/");
   };
 
@@ -124,7 +131,7 @@ export default function Navbar() {
                   color: "#ffffff",
                 }}
               >
-                V
+                {userInitial}
               </div>
               <span
                 style={{
@@ -133,7 +140,7 @@ export default function Navbar() {
                   color: "#334155",
                 }}
               >
-                Vicky
+                {displayName}
               </span>
               <svg
                 style={{
@@ -178,9 +185,9 @@ export default function Navbar() {
                   }}
                 >
                   <p style={{ fontSize: "14px", fontWeight: 600, color: "#1e293b" }}>
-                    Vicky
+                    {displayName}
                   </p>
-                  <p style={{ fontSize: "12px", color: "#94a3b8" }}>Admin</p>
+                  <p style={{ fontSize: "12px", color: "#94a3b8" }}>{displayRole}</p>
                 </div>
                 <div style={{ padding: "4px 0" }}>
                   <button
