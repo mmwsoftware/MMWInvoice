@@ -63,7 +63,7 @@ export default function LetterDetails({
             <input
               type="text"
               required
-              placeholder="e.g. ABC Industries Pvt Ltd"
+              placeholder="e.g. Acme Corp Industries"
               value={data.companyName || ""}
               onChange={(e) => onChange("companyName", e.target.value)}
               className="quot-input"
@@ -111,7 +111,7 @@ export default function LetterDetails({
             <textarea
               rows={3}
               required
-              placeholder="Plot No. 45, Industrial Area, Coimbatore - 641 021, Tamil Nadu, India"
+              placeholder="Enter building, street, area, city, pincode, state"
               value={data.address || ""}
               onChange={(e) => onChange("address", e.target.value)}
               className="quot-input"
@@ -135,7 +135,7 @@ export default function LetterDetails({
             <input
               type="text"
               required
-              placeholder="e.g. Quotation for Supply of DG Set"
+              placeholder="e.g. Quotation for Supply of Equipment"
               value={data.subject || ""}
               onChange={(e) => onChange("subject", e.target.value)}
               className="quot-input"

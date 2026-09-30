@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import LetterDetails from "../components/LetterDetails";
 import QuotationDetails from "../components/QuotationDetails";
 import QuotationProductTable from "../components/QuotationProductTable";
 import QuotationPreview from "./QuotationPreview";
+import { customersApi, quotationsApi } from "../../../services/api";
 
 const STEPS = [
   { id: 1, name: "Details", label: "Letter Details" },
@@ -14,34 +15,64 @@ const STEPS = [
 
 export default function QuotationForm() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const location = useLocation();
+
+  const [currentStep, setCurrentStep] = useState(location.state?.step || 1);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Form State
-  const [letterData, setLetterData] = useState({
-    companyName: "ABC Industries Pvt Ltd",
-    address: "Plot No. 45, Industrial Area,\nCoimbatore - 641 021\nTamil Nadu, India",
-    date: new Date().toISOString().split("T")[0],
-    subject: "Quotation for Supply of DG Set",
+  const [draftId, setDraftId] = useState(location.state?.draftId || null);
+  const [customerId, setCustomerId] = useState(location.state?.customerId || null);
+
+  // Form State - blank defaults without mock data
+  const [letterData, setLetterData] = useState(() => ({
+    companyName: location.state?.letterData?.companyName || "",
+    address: location.state?.letterData?.address || "",
+    date: location.state?.letterData?.date || new Date().toISOString().split("T")[0],
+    subject: location.state?.letterData?.subject || "",
+  }));
+
+  const [quotationData, setQuotationData] = useState(() => ({
+    quoteNo: location.state?.quotationData?.quoteNo || "",
+    quoteDate: location.state?.quotationData?.quoteDate || new Date().toISOString().split("T")[0],
+    companyName: location.state?.quotationData?.companyName || location.state?.letterData?.companyName || "",
+    address: location.state?.quotationData?.address || location.state?.letterData?.address || "",
+    gstin: location.state?.quotationData?.gstin || "",
+  }));
+
+  const [products, setProducts] = useState(() => {
+    return (
+      location.state?.products || [
+        {
+          description: "",
+          hsn: "",
+          uom: "Nos",
+          quantity: 1,
+          rate: "",
+        },
+      ]
+    );
   });
 
-  const [quotationData, setQuotationData] = useState({
-    quoteNo: "MAX/2026/Q001",
-    quoteDate: new Date().toISOString().split("T")[0],
-    companyName: "ABC Industries Pvt Ltd",
-    address: "Plot No. 45, Industrial Area,\nCoimbatore - 641 021\nTamil Nadu, India",
-    gstin: "33AABCR1234F1Z8",
-  });
-
-  const [products, setProducts] = useState([
-    {
-      description: "RECD 125KVA DG set with acoustic enclosure",
-      hsn: "84041000",
-      uom: "Nos",
-      quantity: 1,
-      rate: 800000,
-    },
-  ]);
+  // Fetch next quotation number from backend if empty
+  useEffect(() => {
+    if (!quotationData.quoteNo) {
+      quotationsApi
+        .getNextNumber()
+        .then((res) => {
+          if (res?.next_number) {
+            setQuotationData((prev) => ({
+              ...prev,
+              quoteNo: prev.quoteNo || res.next_number,
+            }));
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch next quotation number:", err);
+        });
+    }
+  }, []);
 
   // Handlers
   const handleLetterChange = (field, value) => {
@@ -68,7 +99,7 @@ export default function QuotationForm() {
   const handleAddProduct = () => {
     setProducts((prev) => [
       ...prev,
-      { description: "", hsn: "", uom: "Nos", quantity: 1, rate: 0 },
+      { description: "", hsn: "", uom: "Nos", quantity: 1, rate: "" },
     ]);
   };
 
@@ -77,9 +108,119 @@ export default function QuotationForm() {
     setProducts((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSaveDraft = () => {
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2500);
+  // Real backend saving logic
+  const saveQuotationToBackend = async () => {
+    const companyName = letterData.companyName?.trim() || quotationData.companyName?.trim();
+    if (!companyName) {
+      throw new Error("Client / Company Name is required.");
+    }
+    const subject = letterData.subject?.trim() || "Quotation";
+
+    // 1. Get, create, or update customer
+    let cId = customerId;
+    const cleanGstin = quotationData.gstin?.trim().toUpperCase() || null;
+    const addressLines = (letterData.address || quotationData.address || "")
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const customerPayload = {
+      name: companyName,
+      address_lines: addressLines.length ? addressLines : [companyName],
+      gstin: cleanGstin,
+    };
+
+    try {
+      if (cId) {
+        await customersApi.update(cId, customerPayload);
+      } else {
+        const found = await customersApi.list(companyName);
+        const match = found.find(
+          (c) => c.name.toLowerCase() === companyName.toLowerCase()
+        );
+        if (match) {
+          cId = match.id;
+          await customersApi.update(cId, customerPayload);
+        } else {
+          const created = await customersApi.create(customerPayload);
+          cId = created.id;
+        }
+        setCustomerId(cId);
+      }
+    } catch (err) {
+      console.error("Customer error:", err);
+      throw new Error(err.response?.data?.detail || "Failed to process customer.");
+    }
+
+    // 2. Prepare items
+    const validItems = products
+      .filter((p) => p.description && p.description.trim())
+      .map((p) => ({
+        description: p.description.trim(),
+        hsn: p.hsn?.trim() || "",
+        qty: parseFloat(p.quantity) || 1,
+        uom: p.uom?.trim() || "Nos",
+        rate: parseFloat(p.rate) || 0,
+      }));
+
+    if (validItems.length === 0) {
+      throw new Error("Please add at least one product with a description and rate.");
+    }
+
+    const payload = {
+      customer_id: cId,
+      quotation_date: quotationData.quoteDate || letterData.date || new Date().toISOString().split("T")[0],
+      subject,
+      items: validItems,
+      quotation_number: quotationData.quoteNo?.trim() || null,
+    };
+
+    let result;
+    if (draftId) {
+      result = await quotationsApi.updateDraft(draftId, payload);
+    } else {
+      result = await quotationsApi.saveDraft(payload);
+      setDraftId(result.id);
+    }
+    return result;
+  };
+
+  const handleSaveDraft = async () => {
+    try {
+      setIsSaving(true);
+      const saved = await saveQuotationToBackend();
+      setToastMessage(`Draft #${saved.id} saved successfully!`);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (err) {
+      alert(err.message || "Failed to save draft");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleProceedToPreview = async () => {
+    try {
+      setIsSaving(true);
+      const saved = await saveQuotationToBackend();
+      const quoteNoFinal = saved.quotation_number || quotationData.quoteNo?.trim() || `Draft #${saved.id}`;
+      navigate("/dashboard/quotation/preview", {
+        state: {
+          draftId: saved.id,
+          customerId: saved.customer_id,
+          letterData,
+          quotationData: {
+            ...quotationData,
+            quoteNo: quoteNoFinal,
+          },
+          products,
+        },
+      });
+    } catch (err) {
+      alert("Error: " + (err.message || "Failed to proceed to preview"));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (currentStep === 4) {
@@ -105,7 +246,7 @@ export default function QuotationForm() {
       {/* Toast Alert */}
       {showToast && (
         <div className="quot-toast">
-          <span>✓</span> Draft saved successfully!
+          <span>✓</span> {toastMessage}
         </div>
       )}
 
@@ -355,6 +496,7 @@ export default function QuotationForm() {
           {currentStep === 2 && (
             <QuotationDetails
               data={quotationData}
+              draftId={draftId}
               onChange={handleQuotationChange}
               onNext={() => setCurrentStep(3)}
               onPrev={() => setCurrentStep(1)}
@@ -368,11 +510,7 @@ export default function QuotationForm() {
               onChangeProduct={handleProductChange}
               onAddProduct={handleAddProduct}
               onRemoveProduct={handleRemoveProduct}
-              onNext={() =>
-                navigate("/dashboard/quotation/preview", {
-                  state: { letterData, quotationData, products },
-                })
-              }
+              onNext={handleProceedToPreview}
               onPrev={() => setCurrentStep(2)}
               onSaveDraft={handleSaveDraft}
             />

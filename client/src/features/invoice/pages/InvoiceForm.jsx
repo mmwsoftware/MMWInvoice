@@ -1,52 +1,77 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import CustomerDetails from "../components/CustomerDetails";
 import InvoiceDetails from "../components/InvoiceDetails";
 import ProductTable from "../components/ProductTable";
 import InvoiceReview from "../components/InvoiceReview";
 import InvoicePreview from "./InvoicePreview";
+import { customersApi, invoicesApi } from "../../../services/api";
 
 const STEPS = [
   { id: 1, name: "Customer", label: "Customer Details" },
   { id: 2, name: "Invoice Details", label: "Invoice Details" },
   { id: 3, name: "Products", label: "Products" },
-  { id: 4, name: "Review", label: "Review" },
+  { id: 4, name: "Review", label: "Review & Preview" },
 ];
 
 export default function InvoiceForm() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const location = useLocation();
+
+  const [currentStep, setCurrentStep] = useState(location.state?.step || 1);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Form State
-  const [customerData, setCustomerData] = useState({
-    customerName: "Gainwell Commosales Pvt Ltd",
-    address: "No. 12, Industrial Estate,\nChennai - 600 058\nTamil Nadu, India",
-    stateCode: "33",
-    gstin: "33AABCG1234F1Z5",
+  const [draftId, setDraftId] = useState(location.state?.draftId || null);
+  const [customerId, setCustomerId] = useState(location.state?.customerId || null);
+
+  // Form State - blank defaults without mock data
+  const [customerData, setCustomerData] = useState(() => ({
+    customerName: location.state?.customerData?.customerName || "",
+    address: location.state?.customerData?.address || "",
+    stateCode: location.state?.customerData?.stateCode || "33",
+    gstin: location.state?.customerData?.gstin || "",
+  }));
+
+  const [invoiceData, setInvoiceData] = useState(() => ({
+    invoiceNo: location.state?.invoiceData?.invoiceNo || "",
+    invoiceDate: location.state?.invoiceData?.invoiceDate || new Date().toISOString().split("T")[0],
+    poNo: location.state?.invoiceData?.poNo || "",
+    poDate: location.state?.invoiceData?.poDate || "",
+  }));
+
+  const [products, setProducts] = useState(() => {
+    return (
+      location.state?.products || [
+        {
+          description: "",
+          hsn: "",
+          quantity: 1,
+          rate: "",
+        },
+      ]
+    );
   });
 
-  const [invoiceData, setInvoiceData] = useState({
-    invoiceNo: "MAX/2026/0074",
-    invoiceDate: new Date().toISOString().split("T")[0],
-    poNo: "PO-88492",
-    poDate: new Date().toISOString().split("T")[0],
-  });
-
-  const [products, setProducts] = useState([
-    {
-      description: "RECD 125KVA DG set",
-      hsn: "84041000",
-      quantity: 1,
-      rate: 168750,
-    },
-    {
-      description: "Installation and Commissioning",
-      hsn: "998729",
-      quantity: 1,
-      rate: 20000,
-    },
-  ]);
+  // Auto-fetch next invoice number from backend if empty
+  useEffect(() => {
+    if (!invoiceData.invoiceNo) {
+      invoicesApi
+        .getNextNumber()
+        .then((res) => {
+          if (res?.next_number) {
+            setInvoiceData((prev) => ({
+              ...prev,
+              invoiceNo: prev.invoiceNo || res.next_number,
+            }));
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch next invoice number:", err);
+        });
+    }
+  }, []);
 
   // Handlers
   const handleCustomerChange = (field, value) => {
@@ -66,9 +91,13 @@ export default function InvoiceForm() {
   };
 
   const handleAddProduct = () => {
+    if (products.length >= 5) {
+      alert("Tax Invoice format supports a maximum of 5 items.");
+      return;
+    }
     setProducts((prev) => [
       ...prev,
-      { description: "", hsn: "", quantity: 1, rate: 0 },
+      { description: "", hsn: "", quantity: 1, rate: "" },
     ]);
   };
 
@@ -77,14 +106,131 @@ export default function InvoiceForm() {
     setProducts((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSaveDraft = () => {
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2500);
+  const saveInvoiceToBackend = async () => {
+    const customerName = customerData.customerName?.trim();
+    if (!customerName) {
+      throw new Error("Customer Name is required.");
+    }
+
+    // 1. Get, create, or update customer
+    let cId = customerId;
+    const cleanGstin = customerData.gstin?.trim().toUpperCase() || null;
+    const addressLines = (customerData.address || "")
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const customerPayload = {
+      name: customerName,
+      address_lines: addressLines.length ? addressLines : [customerName],
+      state_code: customerData.stateCode || "33",
+      gstin: cleanGstin,
+    };
+
+    try {
+      if (cId) {
+        await customersApi.update(cId, customerPayload);
+      } else {
+        const found = await customersApi.list(customerName);
+        const match = found.find(
+          (c) => c.name.toLowerCase() === customerName.toLowerCase()
+        );
+        if (match) {
+          cId = match.id;
+          await customersApi.update(cId, customerPayload);
+        } else {
+          const created = await customersApi.create(customerPayload);
+          cId = created.id;
+        }
+        setCustomerId(cId);
+      }
+    } catch (err) {
+      console.error("Customer error:", err);
+      throw new Error(err.response?.data?.detail || "Failed to process customer.");
+    }
+
+    // 2. Prepare items
+    const validItems = products
+      .filter((p) => p.description && p.description.trim())
+      .map((p) => ({
+        description: p.description.trim(),
+        hsn: p.hsn?.trim() || "",
+        qty: parseFloat(p.quantity) || 1,
+        uom: "Nos.",
+        rate: parseFloat(p.rate) || 0,
+      }));
+
+    if (validItems.length === 0) {
+      throw new Error("Please add at least one product with description and rate.");
+    }
+    if (validItems.length > 5) {
+      throw new Error("Tax Invoice supports a maximum of 5 items.");
+    }
+
+    const payload = {
+      customer_id: cId,
+      invoice_date: invoiceData.invoiceDate || new Date().toISOString().split("T")[0],
+      po_number: invoiceData.poNo?.trim() || null,
+      po_date: invoiceData.poDate?.trim() || null,
+      copy_type: "original",
+      gst_rate: 18.0,
+      items: validItems,
+      invoice_number: invoiceData.invoiceNo?.trim() || null,
+    };
+
+    let result;
+    if (draftId) {
+      result = await invoicesApi.updateDraft(draftId, payload);
+    } else {
+      result = await invoicesApi.saveDraft(payload);
+      setDraftId(result.id);
+    }
+    return result;
+  };
+
+  const handleSaveDraft = async () => {
+    try {
+      setIsSaving(true);
+      const saved = await saveInvoiceToBackend();
+      setToastMessage(`Draft #${saved.id} saved successfully!`);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (err) {
+      alert(err.message || "Failed to save draft");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleProceedToPreview = async () => {
+    try {
+      setIsSaving(true);
+      const saved = await saveInvoiceToBackend();
+      const invoiceNoFinal = saved.invoice_number || invoiceData.invoiceNo?.trim() || `Draft #${saved.id}`;
+      navigate("/dashboard/invoice/preview", {
+        state: {
+          draftId: saved.id,
+          customerId: saved.customer_id,
+          customerData,
+          invoiceData: {
+            ...invoiceData,
+            invoiceNo: invoiceNoFinal,
+          },
+          products,
+        },
+      });
+    } catch (err) {
+      alert("Error: " + (err.message || "Failed to proceed to preview"));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (currentStep === 4) {
     return (
       <InvoicePreview
+        draftId={draftId}
+        customerId={customerId}
         customerData={customerData}
         invoiceData={invoiceData}
         products={products}
@@ -356,6 +502,7 @@ export default function InvoiceForm() {
           {currentStep === 2 && (
             <InvoiceDetails
               data={invoiceData}
+              draftId={draftId}
               onChange={handleInvoiceChange}
               onNext={() => setCurrentStep(3)}
               onPrev={() => setCurrentStep(1)}
@@ -370,7 +517,7 @@ export default function InvoiceForm() {
               onChangeProduct={handleProductChange}
               onAddProduct={handleAddProduct}
               onRemoveProduct={handleRemoveProduct}
-              onNext={() => setCurrentStep(4)}
+              onNext={handleProceedToPreview}
               onPrev={() => setCurrentStep(2)}
               onSaveDraft={handleSaveDraft}
             />

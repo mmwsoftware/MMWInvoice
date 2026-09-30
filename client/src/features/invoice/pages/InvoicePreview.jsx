@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PDFViewer from "../components/PDFViewer";
 import InvoiceGeneratedSuccess from "../components/InvoiceGeneratedSuccess";
+import { invoicesApi, customersApi } from "../../../services/api";
 
 export default function InvoicePreview({
+  draftId: propDraftId,
+  customerId: propCustomerId,
   customerData: propCustomer,
   invoiceData: propInvoice,
   products: propProducts,
@@ -12,45 +15,48 @@ export default function InvoicePreview({
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Use props or location.state or realistic default data matching the screenshot
+  const draftId = propDraftId || location.state?.draftId || null;
+  const customerId = propCustomerId || location.state?.customerId || null;
+
   const customerData =
     propCustomer ||
     location.state?.customerData || {
-      customerName: "Gainwell Commosales Pvt Ltd",
-      address: "No. 12, Industrial Estate,\nChennai - 600 058\nTamil Nadu, India",
+      customerName: "",
+      address: "",
       stateCode: "33",
-      gstin: "33AABCG1234F1Z5",
+      gstin: "",
     };
 
   const invoiceData =
     propInvoice ||
     location.state?.invoiceData || {
-      invoiceNo: "MAX/2026/0073",
-      invoiceDate: "28 Sep 2026",
-      poNo: "PO-88492",
-      poDate: "25 Sep 2026",
+      invoiceNo: "Auto-assigned on issue",
+      invoiceDate: new Date().toISOString().split("T")[0],
+      poNo: "",
+      poDate: "",
     };
 
   const products =
     propProducts ||
     location.state?.products || [
       {
-        description: "RECD 125KVA DG set",
-        hsn: "84041000",
+        description: "",
+        hsn: "",
         quantity: 1,
-        rate: 168750,
-      },
-      {
-        description: "Installation and Commissioning",
-        hsn: "998729",
-        quantity: 1,
-        rate: 20000,
+        rate: 0,
       },
     ];
 
   const [isGenerated, setIsGenerated] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedInvoice, setGeneratedInvoice] = useState(null);
 
-  // Calculations
+  // Real backend preview PDF state
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+  const [loadingPdf, setLoadingPdf] = useState(true);
+  const [pdfError, setPdfError] = useState("");
+
+  // Subtotal & Tax Calculations
   const subTotal = products.reduce((acc, item) => {
     const qty = parseFloat(item.quantity) || 0;
     const rate = parseFloat(item.rate) || 0;
@@ -60,32 +66,183 @@ export default function InvoicePreview({
   const taxRate = 0.18;
   const grandTotal = Math.round(subTotal + subTotal * taxRate);
 
+  // Fetch real backend PDF preview
+  useEffect(() => {
+    let activeUrl = null;
+    let isCancelled = false;
+
+    async function loadBackendPdf() {
+      if (!draftId) {
+        setLoadingPdf(false);
+        return;
+      }
+      try {
+        setLoadingPdf(true);
+        setPdfError("");
+        const blob = await invoicesApi.getPreviewPdfBlob(draftId);
+        if (!isCancelled) {
+          const url = URL.createObjectURL(blob);
+          activeUrl = url;
+          setPdfBlobUrl(url);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.error("Backend preview PDF error:", err);
+          const msg =
+            err.response?.data?.detail ||
+            err.message ||
+            "Failed to load PDF preview from backend.";
+          setPdfError(msg);
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoadingPdf(false);
+        }
+      }
+    }
+
+    loadBackendPdf();
+
+    return () => {
+      isCancelled = true;
+      if (activeUrl) URL.revokeObjectURL(activeUrl);
+    };
+  }, [draftId]);
+
   const handleEdit = () => {
     if (onEdit) {
       onEdit();
     } else {
       navigate("/dashboard/invoice", {
-        state: { customerData, invoiceData, products, step: 3 },
+        state: {
+          draftId,
+          customerId,
+          customerData,
+          invoiceData,
+          products,
+          step: 3,
+        },
       });
     }
   };
 
-  const handleGeneratePDF = () => {
-    setIsGenerated(true);
+  const handleGeneratePDF = async () => {
+    let currentDraftId = draftId;
+    setIsGenerating(true);
+
+    try {
+      // If no draft exists yet, save one first
+      if (!currentDraftId) {
+        const customerName = customerData.customerName?.trim();
+        if (!customerName) {
+          alert("Please fill in Customer name first.");
+          navigate("/dashboard/invoice");
+          return;
+        }
+
+        let cId = customerId;
+        if (!cId) {
+          const existing = await customersApi.list(customerName);
+          const match = existing.find(
+            (c) => c.name.toLowerCase() === customerName.toLowerCase()
+          );
+          if (match) {
+            cId = match.id;
+          } else {
+            const lines = (customerData.address || "")
+              .split("\n")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            const created = await customersApi.create({
+              name: customerName,
+              address_lines: lines.length ? lines : [customerName],
+              state_code: customerData.stateCode || "33",
+              gstin: customerData.gstin || null,
+            });
+            cId = created.id;
+          }
+        }
+
+        const validItems = products
+          .filter((p) => p.description && p.description.trim())
+          .map((p) => ({
+            description: p.description.trim(),
+            hsn: p.hsn?.trim() || "",
+            qty: parseFloat(p.quantity) || 1,
+            uom: "Nos.",
+            rate: parseFloat(p.rate) || 0,
+          }));
+
+        if (validItems.length === 0) {
+          alert("Please add at least one product with description and rate.");
+          setIsGenerating(false);
+          return;
+        }
+        if (validItems.length > 5) {
+          alert("Tax Invoice format supports a maximum of 5 items.");
+          setIsGenerating(false);
+          return;
+        }
+
+        const saved = await invoicesApi.saveDraft({
+          customer_id: cId,
+          invoice_date:
+            invoiceData.invoiceDate || new Date().toISOString().split("T")[0],
+          po_number: invoiceData.poNo?.trim() || null,
+          po_date: invoiceData.poDate?.trim() || null,
+          copy_type: "original",
+          gst_rate: 18.0,
+          items: validItems,
+          invoice_number: invoiceData.invoiceNo?.trim() || null,
+        });
+        currentDraftId = saved.id;
+      }
+
+      // Issue the invoice on backend -> generates official 2-page PDF with QR code & verified number
+      const issued = await invoicesApi.issue(currentDraftId);
+      setGeneratedInvoice(issued);
+      setIsGenerated(true);
+    } catch (err) {
+      console.error("Invoice issue error:", err);
+      alert(
+        "Failed to generate invoice: " +
+          (err.response?.data?.detail || err.message)
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDeleteDraft = async () => {
+    if (!draftId) {
+      navigate("/dashboard/home");
+      return;
+    }
+    const isSure = window.confirm(
+      "Are you sure you want to discard and delete this tax invoice draft?"
+    );
+    if (!isSure) return;
+
+    try {
+      await invoicesApi.delete(draftId);
+      navigate("/dashboard/home");
+    } catch (err) {
+      alert("Failed to delete draft: " + (err.response?.data?.detail || err.message));
+    }
   };
 
   return (
     <div
-      className="prev-container"
+      className="iprev-container"
       style={{
         maxWidth: "1320px",
         margin: "0 auto",
         padding: "24px 24px 40px 24px",
       }}
     >
-      {/* If generated, show Celebratory Success Screen */}
-      {isGenerated ? (
+      {isGenerated && generatedInvoice ? (
         <InvoiceGeneratedSuccess
+          invoice={generatedInvoice}
           customerData={customerData}
           invoiceData={invoiceData}
           grandTotal={grandTotal}
@@ -110,13 +267,13 @@ export default function InvoicePreview({
                 padding: "4px 0",
                 transition: "color 0.2s",
               }}
-              className="prev-back-btn"
+              className="iprev-back-btn"
             >
-              ← Back
+              ← Back to Edit
             </button>
           </div>
 
-          {/* 2-Column Layout: Left Document Summary + Right PDF Viewer */}
+          {/* 2-Column Layout: Left Sticky Document Summary + Right PDF Viewer */}
           <div
             style={{
               display: "grid",
@@ -124,11 +281,11 @@ export default function InvoicePreview({
               gap: "24px",
               alignItems: "start",
             }}
-            className="prev-grid"
+            className="iprev-grid"
           >
-            {/* Left: Document Summary Card */}
+            {/* Left: Sticky Document Summary Card */}
             <div
-              className="prev-summary-card"
+              className="iprev-summary-card"
               style={{
                 backgroundColor: "#ffffff",
                 borderRadius: "18px",
@@ -155,17 +312,24 @@ export default function InvoicePreview({
                   <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
                     Document Type
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>
+                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#059669" }}>
                     Tax Invoice
                   </div>
                 </div>
 
                 <div>
                   <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
-                    Document No.
+                    Invoice No.
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>
-                    {invoiceData.invoiceNo}
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {invoiceData.invoiceNo || (draftId ? `Draft #${draftId}` : "Auto-assigned on issue")}
                   </div>
                 </div>
 
@@ -178,20 +342,31 @@ export default function InvoicePreview({
                   </div>
                 </div>
 
+                {invoiceData.poNo && (
+                  <div>
+                    <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                      PO Number
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: 500, color: "#334155" }}>
+                      {invoiceData.poNo}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
                     Customer
                   </div>
                   <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", lineHeight: "1.4" }}>
-                    {customerData.customerName}
+                    {customerData.customerName || "Customer"}
                   </div>
                 </div>
 
                 <div>
                   <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
-                    Total Amount
+                    Total Amount (Incl. GST)
                   </div>
-                  <div style={{ fontSize: "18px", fontWeight: 800, color: "#0f172a" }}>
+                  <div style={{ fontSize: "19px", fontWeight: 800, color: "#0f172a" }}>
                     ₹{grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                   </div>
                 </div>
@@ -240,6 +415,7 @@ export default function InvoicePreview({
                 <button
                   type="button"
                   onClick={handleEdit}
+                  disabled={isGenerating}
                   style={{
                     flex: 1,
                     padding: "10px 14px",
@@ -252,7 +428,7 @@ export default function InvoicePreview({
                     cursor: "pointer",
                     transition: "all 0.2s",
                   }}
-                  className="prev-btn-edit"
+                  className="iprev-btn-edit"
                 >
                   Edit Details
                 </button>
@@ -260,62 +436,176 @@ export default function InvoicePreview({
                 <button
                   type="button"
                   onClick={handleGeneratePDF}
+                  disabled={isGenerating}
                   style={{
                     flex: 1,
                     padding: "10px 14px",
                     fontSize: "13px",
                     fontWeight: 600,
                     color: "#ffffff",
-                    backgroundColor: "#2563eb",
+                    backgroundColor: "#059669",
                     border: "none",
                     borderRadius: "10px",
-                    cursor: "pointer",
+                    cursor: isGenerating ? "not-allowed" : "pointer",
                     transition: "all 0.2s",
-                    boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
+                    boxShadow: "0 2px 8px rgba(5, 150, 105, 0.25)",
+                    opacity: isGenerating ? 0.7 : 1,
                   }}
-                  className="prev-btn-gen"
+                  className="iprev-btn-gen"
                 >
-                  Generate PDF
+                  {isGenerating ? "Generating..." : "Generate PDF"}
                 </button>
               </div>
+
+              {draftId && (
+                <button
+                  type="button"
+                  onClick={handleDeleteDraft}
+                  style={{
+                    width: "100%",
+                    marginTop: "12px",
+                    padding: "8px 12px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#dc2626",
+                    backgroundColor: "transparent",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    transition: "all 0.2s",
+                  }}
+                  className="iprev-btn-discard"
+                >
+                  <svg style={{ height: "15px", width: "15px" }} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                  </svg>
+                  Discard Draft
+                </button>
+              )}
             </div>
 
-            {/* Right: Embedded PDF Viewer */}
+            {/* Right: Real Backend PDF Viewer */}
             <div style={{ minWidth: 0 }}>
-              <PDFViewer
-                customerData={customerData}
-                invoiceData={invoiceData}
-                products={products}
-              />
+              <div
+                style={{
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  border: "1px solid #cbd5e1",
+                  backgroundColor: "#525659",
+                  height: "820px",
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                  position: "relative",
+                }}
+              >
+                {loadingPdf ? (
+                  <div
+                    style={{
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ffffff",
+                      gap: "14px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        border: "3px solid rgba(255,255,255,0.25)",
+                        borderTopColor: "#10b981",
+                        borderRadius: "50%",
+                        animation: "ispin 0.8s linear infinite",
+                      }}
+                    />
+                    <span style={{ fontSize: "14px", fontWeight: 500 }}>
+                      Rendering official 2-page Tax Invoice PDF from backend...
+                    </span>
+                  </div>
+                ) : pdfError ? (
+                  <div
+                    style={{
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#f87171",
+                      padding: "24px",
+                      textAlign: "center",
+                      backgroundColor: "#1e293b",
+                    }}
+                  >
+                    <p style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 8px 0" }}>
+                      PDF Generation Notice
+                    </p>
+                    <p style={{ fontSize: "14px", color: "#e2e8f0", maxWidth: "480px", margin: 0 }}>
+                      {pdfError}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleEdit}
+                      className="inv-btn-secondary"
+                      style={{ marginTop: "20px" }}
+                    >
+                      ← Back to Edit Details
+                    </button>
+                  </div>
+                ) : pdfBlobUrl ? (
+                  <iframe
+                    src={`${pdfBlobUrl}#toolbar=1&navpanes=0&view=FitH`}
+                    title="Official Tax Invoice PDF Preview"
+                    style={{ width: "100%", height: "100%", border: "none" }}
+                  />
+                ) : (
+                  <PDFViewer
+                    customerData={customerData}
+                    invoiceData={invoiceData}
+                    products={products}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </>
       )}
 
       <style>{`
-        .prev-back-btn:hover {
-          color: #2563eb !important;
+        @keyframes ispin {
+          to { transform: rotate(360deg); }
         }
-        .prev-btn-edit:hover {
+        .iprev-back-btn:hover {
+          color: #059669 !important;
+        }
+        .iprev-btn-edit:hover {
           background-color: #eff6ff !important;
         }
-        .prev-btn-gen:hover {
-          background-color: #1d4ed8 !important;
+        .iprev-btn-gen:hover:not(:disabled) {
+          background-color: #047857 !important;
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35) !important;
+          box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35) !important;
+        }
+        .iprev-btn-discard:hover {
+          background-color: #fee2e2 !important;
+          color: #b91c1c !important;
         }
         @media (max-width: 900px) {
-          .prev-grid {
+          .iprev-grid {
             grid-template-columns: 1fr !important;
             gap: 16px !important;
           }
-          .prev-summary-card {
+          .iprev-summary-card {
             position: static !important;
             width: 100% !important;
           }
         }
         @media (max-width: 640px) {
-          .prev-container {
+          .iprev-container {
             padding: 16px 12px 32px 12px !important;
           }
         }

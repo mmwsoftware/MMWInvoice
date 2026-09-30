@@ -19,6 +19,22 @@ export default function CustomerDetails({
   onNext,
   onSaveDraft,
 }) {
+  const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+  const gstinTrimmed = (data.gstin || "").trim().toUpperCase();
+  const isGstinInvalid = gstinTrimmed.length > 0 && !GSTIN_REGEX.test(gstinTrimmed);
+
+  const handleGstinChange = (val) => {
+    const clean = val.toUpperCase().replace(/\s/g, "");
+    onChange("gstin", clean);
+    // If user enters a 15-char GSTIN, auto-select state code if available
+    if (clean.length >= 2) {
+      const code = clean.substring(0, 2);
+      if (stateOptions.some((s) => s.code === code)) {
+        onChange("stateCode", code);
+      }
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!data.customerName?.trim()) {
@@ -29,8 +45,8 @@ export default function CustomerDetails({
       alert("Please enter Address");
       return;
     }
-    if (!data.gstin?.trim()) {
-      alert("Please enter GSTIN / UIN");
+    if (isGstinInvalid) {
+      alert(`GSTIN "${gstinTrimmed}" is invalid. Please enter a valid 15-character GSTIN (e.g. 33AABCG1234F1Z5) or leave blank if unregistered.`);
       return;
     }
     onNext();
@@ -143,17 +159,25 @@ export default function CustomerDetails({
                 marginBottom: "6px",
               }}
             >
-              GSTIN / UIN <span style={{ color: "#ef4444" }}>*</span>
+              GSTIN / UIN
             </label>
             <input
               type="text"
-              required
+              maxLength={15}
               placeholder="e.g. 33AABCG1234F1Z5"
               value={data.gstin || ""}
-              onChange={(e) => onChange("gstin", e.target.value.toUpperCase())}
+              onChange={(e) => handleGstinChange(e.target.value)}
               className="inv-input"
-              style={{ textTransform: "uppercase" }}
+              style={{
+                textTransform: "uppercase",
+                borderColor: isGstinInvalid ? "#ef4444" : undefined,
+              }}
             />
+            {isGstinInvalid && (
+              <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "4px", margin: "4px 0 0 0" }}>
+                GSTIN must be 15 characters (e.g. 33AABCT0000A1Z5) or blank.
+              </p>
+            )}
           </div>
         </div>
       </div>

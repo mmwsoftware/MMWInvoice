@@ -55,7 +55,7 @@ def save_draft(db: Session, data: dict) -> Invoice:
         if invoice.status != "draft":
             raise ValueError("Cannot modify an issued invoice. Create a new one.")
         # Update existing draft
-        _update_invoice_fields(invoice, data)
+        _update_invoice_fields(invoice, data, db=db)
         # Replace items
         db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.id).delete()
         _add_items(db, invoice, data.get("items", []))
@@ -65,7 +65,7 @@ def save_draft(db: Session, data: dict) -> Invoice:
             status="draft",
             customer_id=data["customer_id"],
         )
-        _update_invoice_fields(invoice, data)
+        _update_invoice_fields(invoice, data, db=db)
         db.add(invoice)
         db.flush()  # Get the ID
         _add_items(db, invoice, data.get("items", []))
@@ -77,17 +77,41 @@ def save_draft(db: Session, data: dict) -> Invoice:
     return invoice
 
 
-def _update_invoice_fields(invoice: Invoice, data: dict) -> None:
+def _update_invoice_fields(invoice: Invoice, data: dict, db: Session | None = None) -> None:
     """Update invoice fields from input data."""
     invoice.customer_id = data.get("customer_id", invoice.customer_id)
-    invoice.invoice_date = data.get("invoice_date", invoice.invoice_date)
+    raw_date = data.get("invoice_date", invoice.invoice_date)
+    if raw_date and "-" in str(raw_date) and len(str(raw_date).split("-")[0]) == 4:
+        parts = str(raw_date).split("-")
+        invoice.invoice_date = f"{parts[2]}.{parts[1]}.{parts[0]}"
+    elif raw_date:
+        invoice.invoice_date = str(raw_date).strip()
+
     invoice.po_number = data.get("po_number")
-    invoice.po_date = data.get("po_date")
+    raw_po_date = data.get("po_date")
+    if raw_po_date and "-" in str(raw_po_date) and len(str(raw_po_date).split("-")[0]) == 4:
+        parts = str(raw_po_date).split("-")
+        invoice.po_date = f"{parts[2]}.{parts[1]}.{parts[0]}"
+    elif raw_po_date:
+        invoice.po_date = str(raw_po_date).strip()
+
     invoice.engineer_name = data.get("engineer_name")
     invoice.engineer_email = data.get("engineer_email")
     invoice.engineer_contact = data.get("engineer_contact")
     invoice.copy_type = data.get("copy_type", "original")
     invoice.gst_rate = data.get("gst_rate", 18.0)
+
+    inv_num = data.get("invoice_number")
+    if inv_num and str(inv_num).strip():
+        desired_num = str(inv_num).strip()
+        if db is not None:
+            existing = db.query(Invoice).filter(
+                Invoice.invoice_number == desired_num,
+                Invoice.id != invoice.id
+            ).first()
+            if existing:
+                raise ValueError(f"Invoice number '{desired_num}' is already in use by another invoice.")
+        invoice.invoice_number = desired_num
 
 
 def _add_items(db: Session, invoice: Invoice, items: list[dict]) -> None:
@@ -145,15 +169,24 @@ def issue_invoice(db: Session, invoice_id: int) -> Invoice:
 
     try:
         # Everything below stays in the caller's transaction until the final commit.
-        invoice_number = allocate_number(db, "invoice")
-        invoice.invoice_number = invoice_number
+        if not invoice.invoice_number:
+            invoice_number = allocate_number(db, "invoice")
+            invoice.invoice_number = invoice_number
+        else:
+            existing = db.query(Invoice).filter(
+                Invoice.invoice_number == invoice.invoice_number,
+                Invoice.id != invoice.id
+            ).first()
+            if existing:
+                raise ValueError(f"Invoice number '{invoice.invoice_number}' is already in use.")
+            invoice_number = invoice.invoice_number
 
         token = generate_public_token()
         invoice.public_token = token
         public_url = build_public_url(token)
 
         qr_bytes, qr_ext = create_qr_image(public_url)
-        engine_data = _build_engine_data(invoice, customer, items)
+        engine_data = _build_engine_data(invoice, customer, items, db=db)
 
         from engines.invoice.engine import build_pdfs
         result = build_pdfs(
@@ -220,11 +253,28 @@ def _build_engine_data(
     invoice: Invoice,
     customer: Customer,
     items: list[InvoiceItem],
+    db: Session | None = None,
 ) -> dict:
     """Build the data dict expected by the invoice engine's build_pdfs()."""
+    inv_num = invoice.invoice_number
+    if not inv_num and db is not None:
+        try:
+            from services.numbering import peek_next_number
+            inv_num = peek_next_number(db, "invoice")
+        except Exception:
+            inv_num = None
+    if not inv_num:
+        from datetime import date
+        inv_num = f"MAX/{date.today().year}/0001"
+
+    inv_date = invoice.invoice_date or datetime.now().strftime("%d.%m.%Y")
+    if "-" in str(inv_date) and len(str(inv_date).split("-")[0]) == 4:
+        parts = str(inv_date).split("-")
+        inv_date = f"{parts[2]}.{parts[1]}.{parts[0]}"
+
     return {
-        "invoice_no": invoice.invoice_number,
-        "invoice_date": invoice.invoice_date,
+        "invoice_no": inv_num,
+        "invoice_date": inv_date,
         "po_no": invoice.po_number or "",
         "po_date": invoice.po_date or "",
         "copy_type": invoice.copy_type or "original",
@@ -237,7 +287,7 @@ def _build_engine_data(
         "customer": {
             "name": customer.name,
             "address_lines": customer.address_lines or [],
-            "state_code": customer.state_code or "",
+            "state_code": customer.state_code or "33",
             "gstin": customer.gstin or "",
         },
         "items": [
@@ -251,6 +301,40 @@ def _build_engine_data(
             for item in items
         ],
     }
+
+
+def preview_invoice_pdf(db: Session, invoice_id: int) -> bytes:
+    """Generate in-memory preview of invoice PDF without committing number or locking."""
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise ValueError(f"Invoice {invoice_id} not found")
+
+    customer = db.query(Customer).filter(Customer.id == invoice.customer_id).first()
+    if not customer:
+        raise ValueError("Customer not found")
+
+    items = (
+        db.query(InvoiceItem)
+        .filter(InvoiceItem.invoice_id == invoice.id)
+        .order_by(InvoiceItem.serial_number)
+        .all()
+    )
+    if not items:
+        raise ValueError("Invoice has no items")
+
+    token = invoice.public_token or generate_public_token()
+    public_url = build_public_url(token)
+    qr_bytes, qr_ext = create_qr_image(public_url)
+    engine_data = _build_engine_data(invoice, customer, items, db=db)
+
+    from engines.invoice.engine import build_pdfs
+    result = build_pdfs(
+        engine_data,
+        qr_bytes=qr_bytes,
+        qr_ext=qr_ext,
+        public_url=public_url,
+    )
+    return result["pdfs"]["full"]
 
 
 # ──────────────────────────────────────────────────────────
@@ -322,3 +406,36 @@ def get_public_invoice_pdf(db: Session, token: str) -> bytes:
     link.last_accessed_at = datetime.now(timezone.utc)
     db.commit()
     return storage.get_pdf(invoice.public_pdf_path)
+
+
+def delete_invoice(db: Session, invoice_id: int) -> bool:
+    """Delete an invoice, its items, public links, and its PDFs from disk."""
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise ValueError(f"Invoice {invoice_id} not found")
+
+    storage = _get_storage()
+    for path in (invoice.private_pdf_path, invoice.public_pdf_path):
+        if path:
+            try:
+                storage.delete(path)
+            except Exception:
+                pass
+
+    # Delete public links & items
+    db.query(PublicLink).filter(PublicLink.invoice_id == invoice.id).delete()
+    db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.id).delete()
+
+    # Log audit
+    _audit(
+        db,
+        "invoice",
+        invoice.id,
+        "invoice_deleted",
+        details={"invoice_number": invoice.invoice_number, "status": invoice.status},
+    )
+
+    # Delete the invoice row
+    db.delete(invoice)
+    db.commit()
+    return True

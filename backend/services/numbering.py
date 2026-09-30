@@ -142,7 +142,27 @@ def allocate_number(
         db.flush()
         sequence = int(row.last_number)
 
-    if doc_type == "invoice":
-        return f"MAX/{year}/{sequence:04d}"
+    return f"MAX/{year}/{sequence:04d}"
 
-    return f"MAX/{year}/S{sequence:04d}"
+
+def peek_next_number(
+    db: Session,
+    doc_type: str,
+    year: int | None = None,
+) -> str:
+    """Preview what the next document number will be, without incrementing the counter."""
+    if doc_type not in STARTING_SEQUENCES:
+        raise ValueError(f"Unknown counter type: {doc_type}")
+
+    year = year or current_year()
+    row = db.execute(
+        select(NumberCounter).where(
+            NumberCounter.doc_type == doc_type,
+            NumberCounter.year == year,
+        )
+    ).scalar_one_or_none()
+
+    last = row.last_number if row is not None else STARTING_SEQUENCES[doc_type]
+    sequence = last + 1
+
+    return f"MAX/{year}/{sequence:04d}"

@@ -1,7 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { invoicesApi } from "../../../services/api";
 
 export default function InvoiceGeneratedSuccess({
+  invoice,
   customerData,
   invoiceData,
   grandTotal,
@@ -9,9 +11,13 @@ export default function InvoiceGeneratedSuccess({
 }) {
   const navigate = useNavigate();
 
-  const handleDownload = () => {
-    alert(`Downloading Tax Invoice ${invoiceData.invoiceNo}.pdf`);
-  };
+  const invoiceNo = invoice?.invoice_number || invoiceData?.invoiceNo || "MAX/2026/0001";
+  const customerName = invoice?.customer?.name || customerData?.customerName || "Customer";
+  const totalAmount = invoice?.total_amount
+    ? Number(invoice.total_amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })
+    : grandTotal
+    ? Number(grandTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 })
+    : "0.00";
 
   const currentDateFormatted = new Date().toLocaleDateString("en-IN", {
     day: "numeric",
@@ -22,6 +28,31 @@ export default function InvoiceGeneratedSuccess({
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  const handleView = async () => {
+    try {
+      if (invoice?.id) {
+        await invoicesApi.viewPdfInNewTab(invoice.id);
+      } else if (onViewPDF) {
+        onViewPDF();
+      }
+    } catch (err) {
+      alert("Failed to open PDF: " + (err.message || "Error"));
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      if (invoice?.id) {
+        const filename = `${invoiceNo.replace(/[\/\\:]/g, "-")}_tax_invoice.pdf`;
+        await invoicesApi.downloadPdf(invoice.id, filename);
+      } else {
+        alert(`Downloading Tax Invoice ${invoiceNo}.pdf`);
+      }
+    } catch (err) {
+      alert("Failed to download PDF: " + (err.message || "Error"));
+    }
+  };
 
   return (
     <div
@@ -84,7 +115,7 @@ export default function InvoiceGeneratedSuccess({
           margin: "0 0 8px 0",
         }}
       >
-        Document Generated Successfully!
+        Tax Invoice Generated Successfully!
       </h2>
       <p
         style={{
@@ -93,7 +124,7 @@ export default function InvoiceGeneratedSuccess({
           margin: "0 0 32px 0",
         }}
       >
-        Your tax invoice has been created and saved.
+        Your official 2-page tax invoice has been generated, signed, and saved to document history.
       </p>
 
       {/* Details Card */}
@@ -111,27 +142,27 @@ export default function InvoiceGeneratedSuccess({
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: "14px", color: "#64748b" }}>Document Type</span>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0f172a" }}>Tax Invoice</span>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: "#059669" }}>Tax Invoice</span>
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", color: "#64748b" }}>Document No.</span>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>
-              {invoiceData.invoiceNo}
+            <span style={{ fontSize: "14px", color: "#64748b" }}>Invoice No.</span>
+            <span style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>
+              {invoiceNo}
             </span>
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: "14px", color: "#64748b" }}>Customer</span>
             <span style={{ fontSize: "14px", fontWeight: 700, color: "#0f172a" }}>
-              {customerData.customerName}
+              {customerName}
             </span>
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", color: "#64748b" }}>Total Amount</span>
-            <span style={{ fontSize: "18px", fontWeight: 800, color: "#0f172a" }}>
-              ₹{grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+            <span style={{ fontSize: "14px", color: "#64748b" }}>Total Amount (Incl. GST)</span>
+            <span style={{ fontSize: "19px", fontWeight: 800, color: "#0f172a" }}>
+              ₹{totalAmount}
             </span>
           </div>
 
@@ -155,7 +186,7 @@ export default function InvoiceGeneratedSuccess({
         }}
       >
         <button
-          onClick={onViewPDF}
+          onClick={handleView}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -163,13 +194,13 @@ export default function InvoiceGeneratedSuccess({
             padding: "12px 28px",
             fontSize: "14px",
             fontWeight: 600,
-            color: "#2563eb",
-            backgroundColor: "#ffffff",
-            border: "1.5px solid #bfdbfe",
+            color: "#ffffff",
+            backgroundColor: "#059669",
+            border: "none",
             borderRadius: "12px",
             cursor: "pointer",
             transition: "all 0.2s",
-            boxShadow: "0 2px 8px rgba(37, 99, 235, 0.08)",
+            boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)",
           }}
           className="succ-btn-view"
         >
@@ -177,7 +208,7 @@ export default function InvoiceGeneratedSuccess({
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
           </svg>
-          View PDF
+          View PDF in Browser
         </button>
 
         <button
@@ -189,13 +220,13 @@ export default function InvoiceGeneratedSuccess({
             padding: "12px 28px",
             fontSize: "14px",
             fontWeight: 600,
-            color: "#2563eb",
+            color: "#334155",
             backgroundColor: "#ffffff",
-            border: "1.5px solid #bfdbfe",
+            border: "1.5px solid #cbd5e1",
             borderRadius: "12px",
             cursor: "pointer",
             transition: "all 0.2s",
-            boxShadow: "0 2px 8px rgba(37, 99, 235, 0.08)",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
           }}
           className="succ-btn-down"
         >
@@ -206,25 +237,40 @@ export default function InvoiceGeneratedSuccess({
         </button>
       </div>
 
-      {/* Back to Dashboard Link */}
-      <button
-        onClick={() => navigate("/dashboard/home")}
-        style={{
-          border: "none",
-          background: "transparent",
-          color: "#2563eb",
-          fontSize: "14px",
-          fontWeight: 600,
-          cursor: "pointer",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "6px",
-          transition: "color 0.2s",
-        }}
-        className="succ-back-link"
-      >
-        Back to Dashboard →
-      </button>
+      {/* Secondary Navigation */}
+      <div style={{ display: "flex", gap: "16px", justifyContent: "center", alignItems: "center" }}>
+        <button
+          onClick={() => navigate("/dashboard/history")}
+          style={{
+            fontSize: "13px",
+            fontWeight: 500,
+            color: "#64748b",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "8px",
+          }}
+          className="succ-back-link"
+        >
+          ← Go to Document History
+        </button>
+        <span style={{ color: "#cbd5e1" }}>•</span>
+        <button
+          onClick={() => navigate("/dashboard/invoice", { replace: true, state: null })}
+          style={{
+            fontSize: "13px",
+            fontWeight: 500,
+            color: "#059669",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "8px",
+          }}
+          className="succ-back-link"
+        >
+          + Create Another Tax Invoice
+        </button>
+      </div>
 
       {/* Styles for confetti animations & hover */}
       <style>{`
@@ -239,14 +285,18 @@ export default function InvoiceGeneratedSuccess({
           }
         }
 
-        .succ-btn-view:hover, .succ-btn-down:hover {
-          background-color: #eff6ff !important;
-          border-color: #3b82f6 !important;
+        .succ-btn-view:hover {
+          background-color: #047857 !important;
+          transform: translateY(-1px);
+        }
+
+        .succ-btn-down:hover {
+          background-color: #f8fafc !important;
+          border-color: #94a3b8 !important;
           transform: translateY(-1px);
         }
 
         .succ-back-link:hover {
-          color: #1d4ed8 !important;
           text-decoration: underline;
         }
 

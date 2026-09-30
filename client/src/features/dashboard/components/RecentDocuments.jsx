@@ -1,31 +1,6 @@
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-const recentDocs = [
-  {
-    type: "Sales Quotation",
-    docNo: "MAX/2026/Q001",
-    customer: "ABC Industries",
-    date: "28 Sep 2026, 10:42 AM",
-    amount: "₹8,00,000",
-    status: "Generated",
-  },
-  {
-    type: "Tax Invoice",
-    docNo: "MAX/2026/0073",
-    customer: "Gainwell Commosales",
-    date: "28 Sep 2026, 10:31 AM",
-    amount: "₹1,99,125",
-    status: "Generated",
-  },
-  {
-    type: "Sales Quotation",
-    docNo: "MAX/2026/Q002",
-    customer: "RMS Power",
-    date: "27 Sep 2026, 04:12 PM",
-    amount: "₹5,75,000",
-    status: "Generated",
-  },
-];
+import { quotationsApi } from "../../../services/api";
 
 function getTypeColor(type) {
   if (type === "Sales Quotation") return "#2563eb";
@@ -35,6 +10,36 @@ function getTypeColor(type) {
 
 export default function RecentDocuments({ mounted }) {
   const navigate = useNavigate();
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadRecentDocs() {
+      try {
+        setLoading(true);
+        const data = await quotationsApi.list({ limit: 5 });
+        setDocuments(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to load recent documents:", err);
+        setDocuments([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadRecentDocs();
+  }, []);
+
+  const handleRowClick = async (doc) => {
+    if (doc.status === "issued") {
+      try {
+        await quotationsApi.viewPdfInNewTab(doc.id);
+      } catch (err) {
+        console.error("Failed to view PDF:", err);
+      }
+    } else {
+      navigate("/dashboard/quotation");
+    }
+  };
 
   return (
     <>
@@ -92,96 +97,133 @@ export default function RecentDocuments({ mounted }) {
         >
           <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "750px" }}>
-            <thead>
-              <tr
-                style={{
-                  borderBottom: "1px solid #f1f5f9",
-                  backgroundColor: "#f8fafc",
-                }}
-              >
-                <th className="rd-th" style={{ width: "18%" }}>Document Type</th>
-                <th className="rd-th" style={{ width: "18%" }}>Document No.</th>
-                <th className="rd-th" style={{ width: "26%" }}>Customer</th>
-                <th className="rd-th" style={{ width: "20%" }}>Date & Time</th>
-                <th className="rd-th" style={{ width: "10%" }}>Amount</th>
-                <th className="rd-th" style={{ width: "8%" }}>Status</th>
-              </tr>
-            </thead>
+              <thead>
+                <tr
+                  style={{
+                    borderBottom: "1px solid #f1f5f9",
+                    backgroundColor: "#f8fafc",
+                  }}
+                >
+                  <th className="rd-th" style={{ width: "18%" }}>Document Type</th>
+                  <th className="rd-th" style={{ width: "18%" }}>Document No.</th>
+                  <th className="rd-th" style={{ width: "26%" }}>Customer</th>
+                  <th className="rd-th" style={{ width: "20%" }}>Date</th>
+                  <th className="rd-th" style={{ width: "10%" }}>Amount</th>
+                  <th className="rd-th" style={{ width: "8%" }}>Status</th>
+                </tr>
+              </thead>
               <tbody>
-                {recentDocs.map((doc, idx) => (
-                  <tr
-                    key={idx}
-                    className="rd-row"
-                    style={{
-                      borderBottom:
-                        idx < recentDocs.length - 1
-                          ? "1px solid #f1f5f9"
-                          : "none",
-                      animation: mounted
-                        ? `rdRowFadeIn 0.4s ease-out ${0.3 + idx * 0.1}s both`
-                        : "none",
-                    }}
-                  >
-                    <td className="rd-td">
-                      <span
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          color: getTypeColor(doc.type),
-                        }}
-                      >
-                        {doc.type}
-                      </span>
-                    </td>
-                    <td className="rd-td">
-                      <span
-                        style={{
-                          fontSize: "14px",
-                          color: "#475569",
-                          fontFamily:
-                            'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
-                        }}
-                      >
-                        {doc.docNo}
-                      </span>
-                    </td>
-                    <td className="rd-td">
-                      <span style={{ fontSize: "14px", color: "#334155" }}>
-                        {doc.customer}
-                      </span>
-                    </td>
-                    <td className="rd-td">
-                      <span style={{ fontSize: "14px", color: "#64748b" }}>
-                        {doc.date}
-                      </span>
-                    </td>
-                    <td className="rd-td">
-                      <span
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          color: "#1e293b",
-                        }}
-                      >
-                        {doc.amount}
-                      </span>
-                    </td>
-                    <td className="rd-td">
-                      <span className="rd-status-badge">
-                        <span
-                          style={{
-                            height: "6px",
-                            width: "6px",
-                            borderRadius: "50%",
-                            backgroundColor: "#10b981",
-                            display: "inline-block",
-                          }}
-                        />
-                        {doc.status}
-                      </span>
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: "36px 20px", textAlign: "center", color: "#64748b" }}>
+                      Loading documents...
                     </td>
                   </tr>
-                ))}
+                ) : documents.length > 0 ? (
+                  documents.map((doc, idx) => {
+                    const docType = "Sales Quotation";
+                    const docNo = doc.quotation_number || `Draft #${doc.id}`;
+                    const customerName = doc.customer?.name || `Customer #${doc.customer_id}`;
+                    const formattedDate = doc.quotation_date || (doc.created_at ? new Date(doc.created_at).toLocaleDateString("en-IN") : "-");
+                    const formattedAmount = doc.total_amount
+                      ? `₹${Number(doc.total_amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
+                      : "₹0.00";
+                    const isIssued = doc.status === "issued";
+
+                    return (
+                      <tr
+                        key={doc.id || idx}
+                        className="rd-row"
+                        onClick={() => handleRowClick(doc)}
+                        style={{
+                          borderBottom: idx < documents.length - 1 ? "1px solid #f1f5f9" : "none",
+                        }}
+                      >
+                        <td className="rd-td">
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: 500,
+                              color: getTypeColor(docType),
+                            }}
+                          >
+                            {docType}
+                          </span>
+                        </td>
+                        <td className="rd-td">
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              color: "#475569",
+                              fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+                            }}
+                          >
+                            {docNo}
+                          </span>
+                        </td>
+                        <td className="rd-td">
+                          <span style={{ fontSize: "14px", color: "#334155" }}>
+                            {customerName}
+                          </span>
+                        </td>
+                        <td className="rd-td">
+                          <span style={{ fontSize: "14px", color: "#64748b" }}>
+                            {formattedDate}
+                          </span>
+                        </td>
+                        <td className="rd-td">
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: 500,
+                              color: "#1e293b",
+                            }}
+                          >
+                            {formattedAmount}
+                          </span>
+                        </td>
+                        <td className="rd-td">
+                          <span
+                            className="rd-status-badge"
+                            style={{
+                              backgroundColor: isIssued ? "#ecfdf5" : "#fef3c7",
+                              color: isIssued ? "#047857" : "#b45309",
+                            }}
+                          >
+                            <span
+                              style={{
+                                height: "6px",
+                                width: "6px",
+                                borderRadius: "50%",
+                                backgroundColor: isIssued ? "#10b981" : "#f59e0b",
+                                display: "inline-block",
+                              }}
+                            />
+                            {isIssued ? "Generated" : "Draft"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      style={{
+                        padding: "48px 20px",
+                        textAlign: "center",
+                        color: "#64748b",
+                      }}
+                    >
+                      <p style={{ fontSize: "15px", fontWeight: 500, margin: 0 }}>
+                        No documents generated yet
+                      </p>
+                      <p style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px" }}>
+                        Click &ldquo;Create Quotation&rdquo; above to generate your first document.
+                      </p>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -189,10 +231,6 @@ export default function RecentDocuments({ mounted }) {
       </div>
 
       <style>{`
-        @keyframes rdRowFadeIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
         .rd-view-history-btn:hover { color: #1d4ed8; }
         .rd-th {
           padding: 14px 20px;
@@ -215,10 +253,8 @@ export default function RecentDocuments({ mounted }) {
           gap: 6px;
           padding: 4px 12px;
           border-radius: 100px;
-          background-color: #ecfdf5;
           font-size: 13px;
           font-weight: 500;
-          color: #047857;
         }
       `}</style>
     </>

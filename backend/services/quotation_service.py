@@ -49,7 +49,7 @@ def save_draft(db: Session, data: dict) -> Quotation:
             raise ValueError(f"Quotation {quotation_id} not found")
         if quotation.status != "draft":
             raise ValueError("Cannot modify an issued quotation.")
-        _update_quotation_fields(quotation, data)
+        _update_quotation_fields(db, quotation, data)
         db.query(QuotationItem).filter(
             QuotationItem.quotation_id == quotation.id
         ).delete()
@@ -59,7 +59,7 @@ def save_draft(db: Session, data: dict) -> Quotation:
             status="draft",
             customer_id=data["customer_id"],
         )
-        _update_quotation_fields(quotation, data)
+        _update_quotation_fields(db, quotation, data)
         db.add(quotation)
         db.flush()
         _add_items(db, quotation, data.get("items", []))
@@ -71,7 +71,7 @@ def save_draft(db: Session, data: dict) -> Quotation:
     return quotation
 
 
-def _update_quotation_fields(quotation: Quotation, data: dict) -> None:
+def _update_quotation_fields(db: Session, quotation: Quotation, data: dict) -> None:
     quotation.customer_id = data.get("customer_id", quotation.customer_id)
     q_date = data.get("quotation_date")
     if isinstance(q_date, str):
@@ -79,6 +79,16 @@ def _update_quotation_fields(quotation: Quotation, data: dict) -> None:
     elif isinstance(q_date, date):
         quotation.quotation_date = q_date
     quotation.subject = str(data.get("subject", quotation.subject or "")).strip() or None
+    q_num = data.get("quotation_number")
+    if q_num and str(q_num).strip():
+        desired_num = str(q_num).strip()
+        existing = db.query(Quotation).filter(
+            Quotation.quotation_number == desired_num,
+            Quotation.id != quotation.id
+        ).first()
+        if existing:
+            raise ValueError(f"Quotation number '{desired_num}' is already in use by another quotation.")
+        quotation.quotation_number = desired_num
 
 
 def _add_items(db: Session, quotation: Quotation, items: list[dict]) -> None:
@@ -134,8 +144,17 @@ def issue_quotation(db: Session, quotation_id: int) -> Quotation:
     created_paths: list[str] = []
 
     try:
-        quotation_number = allocate_number(db, "quotation")
-        quotation.quotation_number = quotation_number
+        if not quotation.quotation_number:
+            quotation_number = allocate_number(db, "quotation")
+            quotation.quotation_number = quotation_number
+        else:
+            existing = db.query(Quotation).filter(
+                Quotation.quotation_number == quotation.quotation_number,
+                Quotation.id != quotation.id
+            ).first()
+            if existing:
+                raise ValueError(f"Quotation number '{quotation.quotation_number}' is already in use.")
+            quotation_number = quotation.quotation_number
 
         engine_data = _build_engine_data(quotation, customer, items)
 
@@ -178,6 +197,7 @@ def _build_engine_data(
     quotation: Quotation,
     customer: Customer,
     items: list[QuotationItem],
+    db: Session | None = None,
 ) -> dict:
     """Build the data dict expected by the quotation engine's build()."""
     q_date = quotation.quotation_date
@@ -198,8 +218,19 @@ def _build_engine_data(
             "rate": float(item.rate),
         })
 
+    quote_num = quotation.quotation_number
+    if not quote_num and db is not None:
+        try:
+            from services.numbering import peek_next_number
+            quote_num = peek_next_number(db, "quotation")
+        except Exception:
+            quote_num = None
+
+    if not quote_num:
+        quote_num = f"MAX/{date.today().year}/0001"
+
     data = {
-        "quote_no": quotation.quotation_number,
+        "quote_no": quote_num,
         "date": q_date.isoformat() if isinstance(q_date, date) else str(q_date),
         "subject": quotation.subject,
         "customer": {
@@ -215,6 +246,31 @@ def _build_engine_data(
         data["customer"]["page9_address_lines"] = customer.page9_address_lines
 
     return data
+
+
+def preview_quotation_pdf(db: Session, quotation_id: int) -> bytes:
+    """Generate in-memory preview of quotation PDF without committing number or locking."""
+    quotation = db.query(Quotation).filter(Quotation.id == quotation_id).first()
+    if not quotation:
+        raise ValueError(f"Quotation {quotation_id} not found")
+
+    customer = db.query(Customer).filter(Customer.id == quotation.customer_id).first()
+    if not customer:
+        raise ValueError("Customer not found")
+
+    items = (
+        db.query(QuotationItem)
+        .filter(QuotationItem.quotation_id == quotation.id)
+        .order_by(QuotationItem.serial_number)
+        .all()
+    )
+    if not items:
+        raise ValueError("Quotation has no items")
+
+    engine_data = _build_engine_data(quotation, customer, items, db=db)
+    from engines.quotation.engine import build
+    result = build(engine_data)
+    return result["pdf"]
 
 
 # ──────────────────────────────────────────────────────────
@@ -265,3 +321,35 @@ def get_quotation_pdf(db: Session, quotation_id: int) -> bytes:
     if not quotation.pdf_path:
         raise ValueError("PDF not found")
     return storage.get_pdf(quotation.pdf_path)
+
+
+def delete_quotation(db: Session, quotation_id: int) -> bool:
+    """Delete a quotation, its items, and its PDF from disk."""
+    quotation = db.query(Quotation).filter(Quotation.id == quotation_id).first()
+    if not quotation:
+        raise ValueError(f"Quotation {quotation_id} not found")
+
+    # If it has a generated PDF file on disk, delete it
+    if quotation.pdf_path:
+        storage = _get_storage()
+        try:
+            storage.delete(quotation.pdf_path)
+        except Exception:
+            pass
+
+    # Delete quotation items
+    db.query(QuotationItem).filter(QuotationItem.quotation_id == quotation.id).delete()
+
+    # Log audit
+    _audit(
+        db,
+        "quotation",
+        quotation.id,
+        "quotation_deleted",
+        details={"quotation_number": quotation.quotation_number, "status": quotation.status},
+    )
+
+    # Delete the quotation row
+    db.delete(quotation)
+    db.commit()
+    return True

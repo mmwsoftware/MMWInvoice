@@ -27,7 +27,7 @@ class InvoiceItemCreate(BaseModel):
 
 class InvoiceDraftCreate(BaseModel):
     customer_id: int
-    invoice_date: str = Field(..., description="DD.MM.YYYY format")
+    invoice_date: str = Field(..., description="DD.MM.YYYY or YYYY-MM-DD format")
     po_number: str | None = None
     po_date: str | None = None
     engineer_name: str | None = None
@@ -36,6 +36,7 @@ class InvoiceDraftCreate(BaseModel):
     copy_type: str = "original"
     gst_rate: float = 18.0
     items: list[InvoiceItemCreate]
+    invoice_number: str | None = None
 
 
 class InvoiceItemResponse(BaseModel):
@@ -47,6 +48,15 @@ class InvoiceItemResponse(BaseModel):
     uom: str | None
     rate: float
     amount: float
+
+    model_config = {"from_attributes": True}
+
+
+class CustomerBriefResponse(BaseModel):
+    id: int
+    name: str
+    gstin: str | None = None
+    address_lines: list[str] = []
 
     model_config = {"from_attributes": True}
 
@@ -71,6 +81,7 @@ class InvoiceResponse(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
     items: list[InvoiceItemResponse] = []
+    customer: CustomerBriefResponse | None = None
 
     model_config = {"from_attributes": True}
 
@@ -134,6 +145,33 @@ def list_invoices(
     )
 
 
+@router.get("/next-number")
+def get_next_invoice_number(
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """Peek the next auto-generated invoice number without consuming it."""
+    from services.numbering import peek_next_number
+    next_num = peek_next_number(db, "invoice")
+    return {"next_number": next_num}
+
+
+@router.get("/check-number")
+def check_invoice_number(
+    number: str = Query(..., min_length=1),
+    invoice_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """Check if an invoice number is available or already used."""
+    from db.models import Invoice
+    q = db.query(Invoice).filter(Invoice.invoice_number == number.strip())
+    if invoice_id:
+        q = q.filter(Invoice.id != invoice_id)
+    exists = q.first() is not None
+    return {"available": not exists, "number": number.strip()}
+
+
 @router.get("/{invoice_id}", response_model=InvoiceResponse)
 def get_invoice(
     invoice_id: int,
@@ -165,6 +203,26 @@ def get_invoice_pdf(
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.get("/{invoice_id}/preview-pdf")
+def get_invoice_preview_pdf(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """Generate and stream a preview of the invoice PDF for drafts."""
+    try:
+        pdf_bytes = invoice_service.preview_invoice_pdf(db, invoice_id)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"inline; filename=preview_invoice_{invoice_id}.pdf"},
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF preview generation failed: {e}")
+
+
 @router.put("/{invoice_id}", response_model=InvoiceResponse)
 def update_draft(
     invoice_id: int,
@@ -180,3 +238,19 @@ def update_draft(
         return invoice
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/{invoice_id}")
+def delete_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """Delete an invoice, its items, and its PDF from disk."""
+    try:
+        invoice_service.delete_invoice(db, invoice_id)
+        return {"success": True, "message": f"Invoice {invoice_id} deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete invoice: {e}")

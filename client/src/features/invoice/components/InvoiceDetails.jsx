@@ -1,16 +1,69 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { invoicesApi } from "../../../services/api";
 
 export default function InvoiceDetails({
   data,
+  draftId,
   onChange,
   onNext,
   onPrev,
   onSaveDraft,
 }) {
+  const [numberStatus, setNumberStatus] = useState({
+    checking: false,
+    available: true,
+    message: "",
+  });
+
+  useEffect(() => {
+    const rawNo = (data.invoiceNo || "").trim();
+    if (!rawNo) {
+      setNumberStatus({ checking: false, available: true, message: "" });
+      return;
+    }
+
+    let isCancelled = false;
+    setNumberStatus((prev) => ({ ...prev, checking: true }));
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await invoicesApi.checkNumber(rawNo, draftId);
+        if (!isCancelled) {
+          if (!res.available) {
+            setNumberStatus({
+              checking: false,
+              available: false,
+              message: `Invoice number "${rawNo}" is already in use. Please enter a unique number.`,
+            });
+          } else {
+            setNumberStatus({
+              checking: false,
+              available: true,
+              message: "Number is unique & available",
+            });
+          }
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          setNumberStatus({ checking: false, available: true, message: "" });
+        }
+      }
+    }, 400);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [data.invoiceNo, draftId]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!data.invoiceNo?.trim()) {
       alert("Please enter Tax Invoice No.");
+      return;
+    }
+    if (!numberStatus.available) {
+      alert(numberStatus.message || "Invoice number is already in use. Please choose a unique number.");
       return;
     }
     if (!data.invoiceDate) {
@@ -56,14 +109,47 @@ export default function InvoiceDetails({
             >
               Tax Invoice No. <span style={{ color: "#ef4444" }}>*</span>
             </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. MAX/2026/0074"
-              value={data.invoiceNo || ""}
-              onChange={(e) => onChange("invoiceNo", e.target.value)}
-              className="inv-input"
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                required
+                placeholder="Auto-generated (e.g. MAX/2026/0001)"
+                value={data.invoiceNo || ""}
+                onChange={(e) => onChange("invoiceNo", e.target.value)}
+                className="inv-input"
+                style={{
+                  borderColor: !numberStatus.available ? "#ef4444" : undefined,
+                  paddingRight: numberStatus.checking ? "80px" : undefined,
+                }}
+              />
+              {numberStatus.checking && (
+                <span
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: "11px",
+                    color: "#64748b",
+                  }}
+                >
+                  Checking...
+                </span>
+              )}
+            </div>
+            {!numberStatus.available ? (
+              <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "4px", margin: "4px 0 0 0" }}>
+                ⚠️ {numberStatus.message}
+              </p>
+            ) : data.invoiceNo?.trim() ? (
+              <p style={{ fontSize: "11px", color: "#10b981", marginTop: "4px", margin: "4px 0 0 0" }}>
+                ✓ {numberStatus.message || "Number is available"}
+              </p>
+            ) : (
+              <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px", margin: "4px 0 0 0" }}>
+                Auto-assigned from backend. You can edit this number.
+              </p>
+            )}
           </div>
 
           {/* Invoice Date */}

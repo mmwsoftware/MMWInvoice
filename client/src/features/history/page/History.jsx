@@ -1,78 +1,81 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import HistoryFilters from "../components/HistoryFilters";
 import HistoryTable from "../components/HistoryTable";
-
-const allDocuments = [
-  {
-    type: "Sales Quotation",
-    docNo: "MAX/2026/Q001",
-    customer: "ABC Industries",
-    date: "28 Sep 2026, 10:42 AM",
-    amount: "₹8,00,000",
-    status: "Generated",
-  },
-  {
-    type: "Tax Invoice",
-    docNo: "MAX/2026/0073",
-    customer: "Gainwell Commosales",
-    date: "28 Sep 2026, 10:31 AM",
-    amount: "₹1,99,125",
-    status: "Generated",
-  },
-  {
-    type: "Sales Quotation",
-    docNo: "MAX/2026/Q002",
-    customer: "RMS Power",
-    date: "27 Sep 2026, 04:12 PM",
-    amount: "₹5,75,000",
-    status: "Generated",
-  },
-  {
-    type: "Tax Invoice",
-    docNo: "MAX/2026/0072",
-    customer: "KPR Engineering",
-    date: "25 Sep 2026, 11:20 AM",
-    amount: "₹2,48,000",
-    status: "Generated",
-  },
-  {
-    type: "Sales Quotation",
-    docNo: "MAX/2026/Q001",
-    customer: "Sri Venkateswara",
-    date: "24 Sep 2026, 03:15 PM",
-    amount: "₹4,20,000",
-    status: "Generated",
-  },
-  {
-    type: "Proforma Invoice",
-    docNo: "MAX/2026/P001",
-    customer: "Lakshmi Motors",
-    date: "23 Sep 2026, 09:45 AM",
-    amount: "₹3,50,000",
-    status: "Generated",
-  },
-  {
-    type: "Tax Invoice",
-    docNo: "MAX/2026/0071",
-    customer: "Bharat Electricals",
-    date: "22 Sep 2026, 02:30 PM",
-    amount: "₹6,12,000",
-    status: "Generated",
-  },
-];
+import { quotationsApi, invoicesApi } from "../../../services/api";
 
 export default function History() {
   const [mounted, setMounted] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 50);
   }, []);
 
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      // Fetch quotations (and invoices if needed)
+      const quotData = await quotationsApi.list();
+      let combined = [];
+
+      if (Array.isArray(quotData)) {
+        combined = quotData.map((q) => ({
+          id: q.id,
+          type: "Sales Quotation",
+          docNo: q.quotation_number || `Draft #${q.id}`,
+          customer: q.customer?.name || `Customer #${q.customer_id}`,
+          date: q.quotation_date || (q.created_at ? new Date(q.created_at).toLocaleDateString("en-IN") : "-"),
+          amount: q.total_amount
+            ? `₹${Number(q.total_amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
+            : "₹0.00",
+          status: q.status === "issued" ? "Generated" : "Draft",
+          rawStatus: q.status,
+        }));
+      }
+
+      // Try fetching invoices as well if endpoint available
+      try {
+        const invData = await invoicesApi.list();
+        if (Array.isArray(invData)) {
+          const formattedInv = invData.map((inv) => ({
+            id: inv.id,
+            type: "Tax Invoice",
+            docNo: inv.invoice_number || `Draft #${inv.id}`,
+            customer: inv.customer?.name || `Customer #${inv.customer_id}`,
+            date: inv.invoice_date || (inv.created_at ? new Date(inv.created_at).toLocaleDateString("en-IN") : "-"),
+            amount: inv.total_amount
+              ? `₹${Number(inv.total_amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
+              : "₹0.00",
+            status: inv.status === "issued" ? "Generated" : "Draft",
+            rawStatus: inv.status,
+          }));
+          combined = [...combined, ...formattedInv];
+        }
+      } catch {
+        // Invoice list error ignored for now
+      }
+
+      // Sort by id descending
+      combined.sort((a, b) => b.id - a.id);
+      setDocuments(combined);
+    } catch (err) {
+      console.error("Failed to fetch documents for history:", err);
+      setDocuments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
   // Filter logic
-  const filteredDocuments = allDocuments.filter((doc) => {
+  const filteredDocuments = documents.filter((doc) => {
     const matchesFilter =
       activeFilter === "All" ||
       (activeFilter === "Sales Quotations" && doc.type === "Sales Quotation") ||
@@ -95,6 +98,31 @@ export default function History() {
     currentPage * itemsPerPage
   );
 
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
+
+  const handleDelete = async (doc) => {
+    const isSure = window.confirm(
+      `Are you sure you want to delete ${doc.type} "${doc.docNo}"?\nThis will permanently remove the record and its PDF.`
+    );
+    if (!isSure) return;
+
+    try {
+      if (doc.type === "Sales Quotation") {
+        await quotationsApi.delete(doc.id);
+      } else {
+        await invoicesApi.delete(doc.id);
+      }
+      setToastMessage(`${doc.type} "${doc.docNo}" deleted successfully.`);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      await fetchDocuments();
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert(err.response?.data?.detail || err.message || "Failed to delete document.");
+    }
+  };
+
   return (
     <div
       className="history-container"
@@ -104,6 +132,13 @@ export default function History() {
         padding: "32px 24px",
       }}
     >
+      {/* Toast Alert */}
+      {showToast && (
+        <div className="hist-toast">
+          <span>✓</span> {toastMessage}
+        </div>
+      )}
+
       {/* Header */}
       <div
         style={{
@@ -152,9 +187,32 @@ export default function History() {
         currentPage={currentPage}
         totalPages={totalPages}
         setCurrentPage={setCurrentPage}
+        loading={loading}
+        onDelete={handleDelete}
       />
 
       <style>{`
+        .hist-toast {
+          position: fixed;
+          top: 80px;
+          right: 28px;
+          z-index: 100;
+          background-color: #1e293b;
+          color: #ffffff;
+          padding: 12px 20px;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+          animation: histSlideIn 0.3s ease-out;
+        }
+        @keyframes histSlideIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         @media (max-width: 640px) {
           .history-container {
             padding: 20px 14px !important;

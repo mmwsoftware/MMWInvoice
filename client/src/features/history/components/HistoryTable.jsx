@@ -1,3 +1,5 @@
+import { quotationsApi, invoicesApi } from "../../../services/api";
+
 function getTypeColor(type) {
   if (type === "Sales Quotation") return "#2563eb";
   if (type === "Tax Invoice") return "#059669";
@@ -11,7 +13,41 @@ export default function HistoryTable({
   currentPage,
   totalPages,
   setCurrentPage,
+  loading,
+  onDelete,
 }) {
+  const handleView = async (doc) => {
+    if (doc.rawStatus !== "issued") {
+      alert("This document is a draft. Generate the quotation to view the official PDF.");
+      return;
+    }
+    try {
+      if (doc.type === "Sales Quotation") {
+        await quotationsApi.viewPdfInNewTab(doc.id);
+      } else {
+        await invoicesApi.viewPdfInNewTab(doc.id);
+      }
+    } catch (err) {
+      alert("Failed to open PDF: " + (err.message || "Error"));
+    }
+  };
+
+  const handleDownload = async (doc) => {
+    if (doc.rawStatus !== "issued") {
+      alert("This document is a draft. Generate the quotation to download the official PDF.");
+      return;
+    }
+    try {
+      const filename = `${doc.docNo.replace(/[\/\\:]/g, "_")}.pdf`;
+      if (doc.type === "Sales Quotation") {
+        await quotationsApi.downloadPdf(doc.id, filename);
+      } else {
+        await invoicesApi.downloadPdf(doc.id, filename);
+      }
+    } catch (err) {
+      alert("Failed to download PDF: " + (err.message || "Error"));
+    }
+  };
   return (
     <>
       <div
@@ -35,17 +71,31 @@ export default function HistoryTable({
                   height: "45px",
                 }}
               >
-                <th className="ht-th" style={{ width: "17%" }}>Document Type</th>
-                <th className="ht-th" style={{ width: "16%" }}>Document No.</th>
-                <th className="ht-th" style={{ width: "23%" }}>Customer</th>
-                <th className="ht-th" style={{ width: "18%" }}>Date & Time</th>
+                <th className="ht-th" style={{ width: "16%" }}>Document Type</th>
+                <th className="ht-th" style={{ width: "15%" }}>Document No.</th>
+                <th className="ht-th" style={{ width: "22%" }}>Customer</th>
+                <th className="ht-th" style={{ width: "16%" }}>Date & Time</th>
                 <th className="ht-th" style={{ width: "12%" }}>Amount</th>
-                <th className="ht-th" style={{ width: "8%" }}>Status</th>
-                <th className="ht-th" style={{ width: "6%", textAlign: "center" }}>Actions</th>
+                <th className="ht-th" style={{ width: "9%" }}>Status</th>
+                <th className="ht-th" style={{ width: "10%", textAlign: "center" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedDocs.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    style={{
+                      padding: "48px 20px",
+                      textAlign: "center",
+                      color: "#64748b",
+                      fontSize: "14px",
+                    }}
+                  >
+                    Loading documents...
+                  </td>
+                </tr>
+              ) : paginatedDocs.length > 0 ? (
                 <>
                   {paginatedDocs.map((doc, idx) => (
                     <tr
@@ -103,13 +153,19 @@ export default function HistoryTable({
                       </span>
                     </td>
                     <td className="ht-td">
-                      <span className="ht-status-badge">
+                      <span
+                        className="ht-status-badge"
+                        style={{
+                          backgroundColor: doc.rawStatus === "issued" ? "#ecfdf5" : "#fef3c7",
+                          color: doc.rawStatus === "issued" ? "#047857" : "#b45309",
+                        }}
+                      >
                         <span
                           style={{
                             height: "6px",
                             width: "6px",
                             borderRadius: "50%",
-                            backgroundColor: "#10b981",
+                            backgroundColor: doc.rawStatus === "issued" ? "#10b981" : "#f59e0b",
                             display: "inline-block",
                           }}
                         />
@@ -121,11 +177,16 @@ export default function HistoryTable({
                         style={{
                           display: "flex",
                           alignItems: "center",
+                          justifyContent: "center",
                           gap: "6px",
                         }}
                       >
                         {/* View */}
-                        <button className="ht-action-btn" title="View">
+                        <button
+                          className="ht-action-btn"
+                          title="View PDF"
+                          onClick={() => handleView(doc)}
+                        >
                           <svg
                             style={{ height: "16px", width: "16px" }}
                             fill="none"
@@ -147,7 +208,11 @@ export default function HistoryTable({
                         </button>
 
                         {/* Download */}
-                        <button className="ht-action-btn" title="Download">
+                        <button
+                          className="ht-action-btn"
+                          title="Download PDF"
+                          onClick={() => handleDownload(doc)}
+                        >
                           <svg
                             style={{ height: "16px", width: "16px" }}
                             fill="none"
@@ -159,6 +224,27 @@ export default function HistoryTable({
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
+                            />
+                          </svg>
+                        </button>
+
+                        {/* Delete */}
+                        <button
+                          className="ht-action-btn ht-action-delete"
+                          title="Delete PDF & Document"
+                          onClick={() => onDelete && onDelete(doc)}
+                        >
+                          <svg
+                            style={{ height: "16px", width: "16px" }}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
                             />
                           </svg>
                         </button>
@@ -381,6 +467,11 @@ export default function HistoryTable({
           background-color: #f1f5f9;
           border-color: #cbd5e1;
           color: #334155;
+        }
+        .ht-action-delete:hover {
+          background-color: #fee2e2 !important;
+          border-color: #fca5a5 !important;
+          color: #dc2626 !important;
         }
         .ht-page-btn {
           display: flex;

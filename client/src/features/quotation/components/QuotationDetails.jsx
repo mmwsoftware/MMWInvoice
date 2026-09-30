@@ -1,20 +1,77 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { quotationsApi } from "../../../services/api";
 
 export default function QuotationDetails({
   data,
+  draftId,
   onChange,
   onNext,
   onPrev,
   onSaveDraft,
 }) {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!data.quoteNo?.trim()) {
-      alert("Please enter Quote No.");
+  const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+  const gstinTrimmed = (data.gstin || "").trim().toUpperCase();
+  const isGstinInvalid = gstinTrimmed.length > 0 && !GSTIN_REGEX.test(gstinTrimmed);
+
+  const [numberStatus, setNumberStatus] = useState({
+    checking: false,
+    available: true,
+    message: "",
+  });
+
+  useEffect(() => {
+    const rawNo = (data.quoteNo || "").trim();
+    if (!rawNo) {
+      setNumberStatus({ checking: false, available: true, message: "" });
       return;
     }
+
+    let isCancelled = false;
+    setNumberStatus((prev) => ({ ...prev, checking: true }));
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await quotationsApi.checkNumber(rawNo, draftId);
+        if (!isCancelled) {
+          if (!res.available) {
+            setNumberStatus({
+              checking: false,
+              available: false,
+              message: `Quote number "${rawNo}" is already used. Please enter a unique number.`,
+            });
+          } else {
+            setNumberStatus({
+              checking: false,
+              available: true,
+              message: "Number is unique & available",
+            });
+          }
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          setNumberStatus({ checking: false, available: true, message: "" });
+        }
+      }
+    }, 400);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [data.quoteNo, draftId]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
     if (!data.quoteDate) {
       alert("Please select Quotation Date");
+      return;
+    }
+    if (!numberStatus.available) {
+      alert(numberStatus.message || "Quotation number is already in use. Please enter a unique number.");
+      return;
+    }
+    if (isGstinInvalid) {
+      alert(`GSTIN "${gstinTrimmed}" is invalid. Please enter a valid 15-character GSTIN (e.g. 33AABCT0000A1Z5), or leave it empty if the client has no GSTIN.`);
       return;
     }
     onNext();
@@ -54,16 +111,48 @@ export default function QuotationDetails({
                 marginBottom: "6px",
               }}
             >
-              Quote No. <span style={{ color: "#ef4444" }}>*</span>
+              Quote No.
             </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. MAX/2026/Q001"
-              value={data.quoteNo || ""}
-              onChange={(e) => onChange("quoteNo", e.target.value)}
-              className="quot-input"
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                placeholder="Auto-generated (e.g. MAX/2026/0003)"
+                value={data.quoteNo || ""}
+                onChange={(e) => onChange("quoteNo", e.target.value)}
+                className="quot-input"
+                style={{
+                  borderColor: !numberStatus.available ? "#ef4444" : undefined,
+                  paddingRight: numberStatus.checking ? "80px" : undefined,
+                }}
+              />
+              {numberStatus.checking && (
+                <span
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: "11px",
+                    color: "#64748b",
+                  }}
+                >
+                  Checking...
+                </span>
+              )}
+            </div>
+            {!numberStatus.available ? (
+              <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "4px", margin: "4px 0 0 0" }}>
+                ⚠️ {numberStatus.message}
+              </p>
+            ) : data.quoteNo?.trim() ? (
+              <p style={{ fontSize: "11px", color: "#10b981", marginTop: "4px", margin: "4px 0 0 0" }}>
+                ✓ {numberStatus.message || "Number is available"}
+              </p>
+            ) : (
+              <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px", margin: "4px 0 0 0" }}>
+                Auto-assigned from backend. You can edit this number.
+              </p>
+            )}
           </div>
 
           {/* Quotation Date */}
@@ -182,12 +271,21 @@ export default function QuotationDetails({
               </label>
               <input
                 type="text"
-                placeholder="e.g. 33AABCR1234F1Z8"
+                maxLength={15}
+                placeholder="e.g. 33AABCT0000A1Z5 (optional, leave blank if none)"
                 value={data.gstin || ""}
-                onChange={(e) => onChange("gstin", e.target.value.toUpperCase())}
+                onChange={(e) => onChange("gstin", e.target.value.toUpperCase().replace(/\s/g, ""))}
                 className="quot-input"
-                style={{ textTransform: "uppercase" }}
+                style={{
+                  textTransform: "uppercase",
+                  borderColor: isGstinInvalid ? "#ef4444" : undefined,
+                }}
               />
+              {isGstinInvalid && (
+                <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "4px", margin: "4px 0 0 0" }}>
+                  GSTIN must be 15 characters (e.g. 33AABCT0000A1Z5) or leave blank if unregistered.
+                </p>
+              )}
             </div>
           </div>
         </div>
