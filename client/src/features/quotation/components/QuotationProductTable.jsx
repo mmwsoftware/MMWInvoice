@@ -8,7 +8,6 @@ export default function QuotationProductTable({
   onRemoveProduct,
   onNext,
   onPrev,
-  onSaveDraft,
 }) {
   const totalAmount = products.reduce((acc, item) => {
     const qty = parseFloat(item.quantity) || 0;
@@ -488,13 +487,6 @@ export default function QuotationProductTable({
         </button>
 
         <div style={{ display: "flex", gap: "12px" }}>
-          <button
-            type="button"
-            onClick={onSaveDraft}
-            className="quot-btn-secondary"
-          >
-            Save Draft
-          </button>
           <button type="submit" className="quot-btn-primary">
             Preview →
           </button>

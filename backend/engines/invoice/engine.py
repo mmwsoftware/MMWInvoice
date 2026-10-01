@@ -18,6 +18,12 @@ TICK_PITCH = 11.9                                           # Original / Duplica
 COPY_INDEX = {"original": 0, "duplicate": 1, "triplicate": 2}
 MAX_ITEMS = 5
 
+# Static MMW project engineer details
+STATIC_ENGINEER_NAME = "Sathya Bama"
+STATIC_ENGINEER_EMAIL = "sathya@maxmoc.in"
+STATIC_ENGINEER_CONTACT = "99528 23148"
+STATIC_COUNTRY = "India"
+STATIC_COUNTRY_CODE = "91"
 
 class FieldOverflow(Exception):
     ...
@@ -450,11 +456,11 @@ def build_pdfs(
         ("invoice_date", data["invoice_date"]),
         ("po_no", data["po_no"]),
         ("po_date", data["po_date"]),
-        ("engineer_name", eng["name"]),
-        ("engineer_email", eng["email"]),
-        ("engineer_contact", eng["contact"]),
-        ("country", data.get("country", "India")),
-        ("country_code", data.get("country_code", "91")),
+        ("engineer_name", STATIC_ENGINEER_NAME),
+        ("engineer_email", STATIC_ENGINEER_EMAIL),
+        ("engineer_contact", STATIC_ENGINEER_CONTACT),
+        ("country", STATIC_COUNTRY),
+        ("country_code", STATIC_COUNTRY_CODE),
     ):
         _draw(
             p1,

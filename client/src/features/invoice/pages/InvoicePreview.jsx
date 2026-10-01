@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import PDFViewer from "../components/PDFViewer";
+import PdfPreviewFrame from "../../../components/PdfPreviewFrame";
 import InvoiceGeneratedSuccess from "../components/InvoiceGeneratedSuccess";
-import { invoicesApi, customersApi } from "../../../services/api";
+import { generateInvoice, previewInvoice } from "../../../services/documentHelpers";
 
 export default function InvoicePreview({
-  draftId: propDraftId,
-  customerId: propCustomerId,
   customerData: propCustomer,
   invoiceData: propInvoice,
   products: propProducts,
@@ -15,8 +13,6 @@ export default function InvoicePreview({
   const location = useLocation();
   const navigate = useNavigate();
 
-  const draftId = propDraftId || location.state?.draftId || null;
-  const customerId = propCustomerId || location.state?.customerId || null;
 
   const customerData =
     propCustomer ||
@@ -51,10 +47,6 @@ export default function InvoicePreview({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedInvoice, setGeneratedInvoice] = useState(null);
 
-  // Real backend preview PDF state
-  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
-  const [loadingPdf, setLoadingPdf] = useState(true);
-  const [pdfError, setPdfError] = useState("");
 
   // Subtotal & Tax Calculations
   const subTotal = products.reduce((acc, item) => {
@@ -66,48 +58,6 @@ export default function InvoicePreview({
   const taxRate = 0.18;
   const grandTotal = Math.round(subTotal + subTotal * taxRate);
 
-  // Fetch real backend PDF preview
-  useEffect(() => {
-    let activeUrl = null;
-    let isCancelled = false;
-
-    async function loadBackendPdf() {
-      if (!draftId) {
-        setLoadingPdf(false);
-        return;
-      }
-      try {
-        setLoadingPdf(true);
-        setPdfError("");
-        const blob = await invoicesApi.getPreviewPdfBlob(draftId);
-        if (!isCancelled) {
-          const url = URL.createObjectURL(blob);
-          activeUrl = url;
-          setPdfBlobUrl(url);
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          console.error("Backend preview PDF error:", err);
-          const msg =
-            err.response?.data?.detail ||
-            err.message ||
-            "Failed to load PDF preview from backend.";
-          setPdfError(msg);
-        }
-      } finally {
-        if (!isCancelled) {
-          setLoadingPdf(false);
-        }
-      }
-    }
-
-    loadBackendPdf();
-
-    return () => {
-      isCancelled = true;
-      if (activeUrl) URL.revokeObjectURL(activeUrl);
-    };
-  }, [draftId]);
 
   const handleEdit = () => {
     if (onEdit) {
@@ -115,8 +65,6 @@ export default function InvoicePreview({
     } else {
       navigate("/dashboard/invoice", {
         state: {
-          draftId,
-          customerId,
           customerData,
           invoiceData,
           products,
@@ -127,107 +75,21 @@ export default function InvoicePreview({
   };
 
   const handleGeneratePDF = async () => {
-    let currentDraftId = draftId;
+    if (isGenerating) return;
     setIsGenerating(true);
-
     try {
-      // If no draft exists yet, save one first
-      if (!currentDraftId) {
-        const customerName = customerData.customerName?.trim();
-        if (!customerName) {
-          alert("Please fill in Customer name first.");
-          navigate("/dashboard/invoice");
-          return;
-        }
-
-        let cId = customerId;
-        if (!cId) {
-          const existing = await customersApi.list(customerName);
-          const match = existing.find(
-            (c) => c.name.toLowerCase() === customerName.toLowerCase()
-          );
-          if (match) {
-            cId = match.id;
-          } else {
-            const lines = (customerData.address || "")
-              .split("\n")
-              .map((s) => s.trim())
-              .filter(Boolean);
-            const created = await customersApi.create({
-              name: customerName,
-              address_lines: lines.length ? lines : [customerName],
-              state_code: customerData.stateCode || "33",
-              gstin: customerData.gstin || null,
-            });
-            cId = created.id;
-          }
-        }
-
-        const validItems = products
-          .filter((p) => p.description && p.description.trim())
-          .map((p) => ({
-            description: p.description.trim(),
-            hsn: p.hsn?.trim() || "",
-            qty: parseFloat(p.quantity) || 1,
-            uom: "Nos.",
-            rate: parseFloat(p.rate) || 0,
-          }));
-
-        if (validItems.length === 0) {
-          alert("Please add at least one product with description and rate.");
-          setIsGenerating(false);
-          return;
-        }
-        if (validItems.length > 5) {
-          alert("Tax Invoice format supports a maximum of 5 items.");
-          setIsGenerating(false);
-          return;
-        }
-
-        const saved = await invoicesApi.saveDraft({
-          customer_id: cId,
-          invoice_date:
-            invoiceData.invoiceDate || new Date().toISOString().split("T")[0],
-          po_number: invoiceData.poNo?.trim() || null,
-          po_date: invoiceData.poDate?.trim() || null,
-          copy_type: "original",
-          gst_rate: 18.0,
-          items: validItems,
-          invoice_number: invoiceData.invoiceNo?.trim() || null,
-        });
-        currentDraftId = saved.id;
-      }
-
-      // Issue the invoice on backend -> generates official 2-page PDF with QR code & verified number
-      const issued = await invoicesApi.issue(currentDraftId);
+      // One call: validates, creates the customer if needed, numbers and issues the invoice.
+      const issued = await generateInvoice({ customerData, invoiceData, products });
       setGeneratedInvoice(issued);
       setIsGenerated(true);
     } catch (err) {
-      console.error("Invoice issue error:", err);
+      console.error("Invoice generation error:", err);
       alert(
         "Failed to generate invoice: " +
           (err.response?.data?.detail || err.message)
       );
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handleDeleteDraft = async () => {
-    if (!draftId) {
-      navigate("/dashboard/home");
-      return;
-    }
-    const isSure = window.confirm(
-      "Are you sure you want to discard and delete this tax invoice draft?"
-    );
-    if (!isSure) return;
-
-    try {
-      await invoicesApi.delete(draftId);
-      navigate("/dashboard/home");
-    } catch (err) {
-      alert("Failed to delete draft: " + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -329,7 +191,7 @@ export default function InvoicePreview({
                       fontFamily: "monospace",
                     }}
                   >
-                    {invoiceData.invoiceNo || (draftId ? `Draft #${draftId}` : "Auto-assigned on issue")}
+                    {invoiceData.invoiceNo || "Auto-assigned on issue"}
                   </div>
                 </div>
 
@@ -456,39 +318,9 @@ export default function InvoicePreview({
                   {isGenerating ? "Generating..." : "Generate PDF"}
                 </button>
               </div>
-
-              {draftId && (
-                <button
-                  type="button"
-                  onClick={handleDeleteDraft}
-                  style={{
-                    width: "100%",
-                    marginTop: "12px",
-                    padding: "8px 12px",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "#dc2626",
-                    backgroundColor: "transparent",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    transition: "all 0.2s",
-                  }}
-                  className="iprev-btn-discard"
-                >
-                  <svg style={{ height: "15px", width: "15px" }} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                  </svg>
-                  Discard Draft
-                </button>
-              )}
             </div>
 
-            {/* Right: Real Backend PDF Viewer */}
+            {/* Right: real PDF rendered by the backend (nothing is saved) */}
             <div style={{ minWidth: 0 }}>
               <div
                 style={{
@@ -501,74 +333,11 @@ export default function InvoicePreview({
                   position: "relative",
                 }}
               >
-                {loadingPdf ? (
-                  <div
-                    style={{
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#ffffff",
-                      gap: "14px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        border: "3px solid rgba(255,255,255,0.25)",
-                        borderTopColor: "#10b981",
-                        borderRadius: "50%",
-                        animation: "ispin 0.8s linear infinite",
-                      }}
-                    />
-                    <span style={{ fontSize: "14px", fontWeight: 500 }}>
-                      Rendering official 2-page Tax Invoice PDF from backend...
-                    </span>
-                  </div>
-                ) : pdfError ? (
-                  <div
-                    style={{
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#f87171",
-                      padding: "24px",
-                      textAlign: "center",
-                      backgroundColor: "#1e293b",
-                    }}
-                  >
-                    <p style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 8px 0" }}>
-                      PDF Generation Notice
-                    </p>
-                    <p style={{ fontSize: "14px", color: "#e2e8f0", maxWidth: "480px", margin: 0 }}>
-                      {pdfError}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleEdit}
-                      className="inv-btn-secondary"
-                      style={{ marginTop: "20px" }}
-                    >
-                      ← Back to Edit Details
-                    </button>
-                  </div>
-                ) : pdfBlobUrl ? (
-                  <iframe
-                    src={`${pdfBlobUrl}#toolbar=1&navpanes=0&view=FitH`}
-                    title="Official Tax Invoice PDF Preview"
-                    style={{ width: "100%", height: "100%", border: "none" }}
-                  />
-                ) : (
-                  <PDFViewer
-                    customerData={customerData}
-                    invoiceData={invoiceData}
-                    products={products}
-                  />
-                )}
+                <PdfPreviewFrame
+                  load={() => previewInvoice({ customerData, invoiceData, products })}
+                  onEdit={handleEdit}
+                  title="Tax Invoice PDF preview"
+                />
               </div>
             </div>
           </div>
@@ -576,9 +345,6 @@ export default function InvoicePreview({
       )}
 
       <style>{`
-        @keyframes ispin {
-          to { transform: rotate(360deg); }
-        }
         .iprev-back-btn:hover {
           color: #059669 !important;
         }
@@ -589,10 +355,6 @@ export default function InvoicePreview({
           background-color: #047857 !important;
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35) !important;
-        }
-        .iprev-btn-discard:hover {
-          background-color: #fee2e2 !important;
-          color: #b91c1c !important;
         }
         @media (max-width: 900px) {
           .iprev-grid {

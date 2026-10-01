@@ -3,11 +3,9 @@ import { quotationsApi } from "../../../services/api";
 
 export default function QuotationDetails({
   data,
-  draftId,
   onChange,
   onNext,
   onPrev,
-  onSaveDraft,
 }) {
   const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
   const gstinTrimmed = (data.gstin || "").trim().toUpperCase();
@@ -31,7 +29,7 @@ export default function QuotationDetails({
 
     const timer = setTimeout(async () => {
       try {
-        const res = await quotationsApi.checkNumber(rawNo, draftId);
+        const res = await quotationsApi.checkNumber(rawNo);
         if (!isCancelled) {
           if (!res.available) {
             setNumberStatus({
@@ -58,7 +56,7 @@ export default function QuotationDetails({
       isCancelled = true;
       clearTimeout(timer);
     };
-  }, [data.quoteNo, draftId]);
+  }, [data.quoteNo]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -312,13 +310,6 @@ export default function QuotationDetails({
         </button>
 
         <div style={{ display: "flex", gap: "12px" }}>
-          <button
-            type="button"
-            onClick={onSaveDraft}
-            className="quot-btn-secondary"
-          >
-            Save Draft
-          </button>
           <button type="submit" className="quot-btn-primary">
             Next →
           </button>

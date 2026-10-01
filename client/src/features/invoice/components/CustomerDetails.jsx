@@ -17,7 +17,6 @@ export default function CustomerDetails({
   data,
   onChange,
   onNext,
-  onSaveDraft,
 }) {
   const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
   const gstinTrimmed = (data.gstin || "").trim().toUpperCase();
@@ -195,13 +194,6 @@ export default function CustomerDetails({
           borderTop: "1px solid #f1f5f9",
         }}
       >
-        <button
-          type="button"
-          onClick={onSaveDraft}
-          className="inv-btn-secondary"
-        >
-          Save Draft
-        </button>
         <button type="submit" className="inv-btn-primary">
           Next →
         </button>

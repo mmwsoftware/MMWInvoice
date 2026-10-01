@@ -9,7 +9,6 @@ export default function ProductTable({
   onRemoveProduct,
   onNext,
   onPrev,
-  onSaveDraft,
 }) {
   // Calculations
   const subTotal = products.reduce((acc, item) => {
@@ -524,13 +523,6 @@ export default function ProductTable({
         </button>
 
         <div style={{ display: "flex", gap: "12px" }}>
-          <button
-            type="button"
-            onClick={onSaveDraft}
-            className="inv-btn-secondary"
-          >
-            Save Draft
-          </button>
           <button type="submit" className="inv-btn-primary">
             Preview →
           </button>

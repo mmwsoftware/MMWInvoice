@@ -16,8 +16,8 @@ from config import get_settings
 from db.models import (
     Invoice, InvoiceItem, Customer, PublicLink, AuditLog, NumberCounter
 )
-from services.numbering import allocate_number
-from services.qr_service import generate_public_token, build_public_url, create_qr_image
+from services.numbering import allocate_number, peek_next_number
+from services.qr_service import generate_public_token, build_public_url, create_qr_image, create_preview_qr
 from storage.local import LocalStorage
 
 
@@ -152,6 +152,57 @@ def generate_invoice(db: Session, data: dict) -> Invoice:
             except Exception:
                 pass
         raise
+
+
+def preview_invoice_pdf(db: Session, data: dict) -> bytes:
+    """Render the full 2-page invoice from form data WITHOUT saving anything.
+
+    No database rows, files or document numbers are created. The number shown is
+    the one the user typed, or the next number that would be assigned.
+    """
+    items = data.get("items") or []
+    if not items:
+        raise ValueError("Invoice has no items")
+
+    customer = data.get("customer") or {}
+    number = (data.get("invoice_number") or "").strip() or peek_next_number(db, "invoice")
+
+    engine_data = {
+        "invoice_no": number,
+        "invoice_date": data.get("invoice_date") or "",
+        "po_no": data.get("po_number") or "",
+        "po_date": data.get("po_date") or "",
+        "copy_type": data.get("copy_type") or "original",
+        "gst_rate": data.get("gst_rate") or 18,
+        "engineer": {
+            "name": data.get("engineer_name") or "",
+            "email": data.get("engineer_email") or "",
+            "contact": data.get("engineer_contact") or "",
+        },
+        "customer": {
+            "name": customer.get("name") or "",
+            "address_lines": customer.get("address_lines") or [],
+            "state_code": customer.get("state_code") or "",
+            "gstin": (customer.get("gstin") or "").strip().upper(),
+        },
+        "items": [
+            {
+                "description": it["description"],
+                "hsn": it.get("hsn_code", it.get("hsn", "")) or "",
+                "qty": it["qty"],
+                "uom": it.get("uom") or "Nos.",
+                "rate": it["rate"],
+            }
+            for it in items
+        ],
+    }
+
+    public_url = build_public_url("preview-not-issued")
+    qr_bytes, qr_ext = create_preview_qr(public_url)
+
+    from engines.invoice.engine import build_pdfs
+    result = build_pdfs(engine_data, qr_bytes=qr_bytes, qr_ext=qr_ext, public_url=public_url)
+    return result["pdfs"]["full"]
 
 
 def _update_invoice_fields(invoice: Invoice, data: dict) -> None:

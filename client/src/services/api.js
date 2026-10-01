@@ -97,20 +97,21 @@ export const quotationsApi = {
     return response.data;
   },
 
-  saveDraft: async (data) => {
+  generate: async (data) => {
+    // One-shot: creates, numbers and issues the document, returning the final record.
     const response = await api.post("/api/quotations", data);
     return response.data;
   },
 
-  updateDraft: async (id, data) => {
-    const response = await api.put(`/api/quotations/${id}`, data);
+  // Renders the real PDF from form data. Saves nothing and uses no number.
+  preview: async (data) => {
+    const response = await api.post("/api/quotations/preview", data, {
+      responseType: "blob",
+    });
     return response.data;
   },
 
-  issue: async (id) => {
-    const response = await api.post(`/api/quotations/${id}/issue`);
-    return response.data;
-  },
+
 
   getPdfBlob: async (id) => {
     const response = await api.get(`/api/quotations/${id}/pdf`, {
@@ -119,21 +120,14 @@ export const quotationsApi = {
     return response.data;
   },
 
-  getPreviewPdfBlob: async (id) => {
-    const response = await api.get(`/api/quotations/${id}/preview-pdf`, {
-      responseType: "blob",
-    });
-    return response.data;
-  },
 
   getNextNumber: async () => {
     const response = await api.get("/api/quotations/next-number");
     return response.data;
   },
 
-  checkNumber: async (number, quotationId = null) => {
+  checkNumber: async (number) => {
     const params = { number };
-    if (quotationId) params.quotation_id = quotationId;
     const response = await api.get("/api/quotations/check-number", { params });
     return response.data;
   },
@@ -174,20 +168,21 @@ export const invoicesApi = {
     return response.data;
   },
 
-  saveDraft: async (data) => {
+  generate: async (data) => {
+    // One-shot: creates, numbers and issues the document, returning the final record.
     const response = await api.post("/api/invoices", data);
     return response.data;
   },
 
-  updateDraft: async (id, data) => {
-    const response = await api.put(`/api/invoices/${id}`, data);
+  // Renders the real PDF from form data. Saves nothing and uses no number.
+  preview: async (data) => {
+    const response = await api.post("/api/invoices/preview", data, {
+      responseType: "blob",
+    });
     return response.data;
   },
 
-  issue: async (id) => {
-    const response = await api.post(`/api/invoices/${id}/issue`);
-    return response.data;
-  },
+
 
   getPdfBlob: async (id) => {
     const response = await api.get(`/api/invoices/${id}/pdf`, {
@@ -196,21 +191,14 @@ export const invoicesApi = {
     return response.data;
   },
 
-  getPreviewPdfBlob: async (id) => {
-    const response = await api.get(`/api/invoices/${id}/preview-pdf`, {
-      responseType: "blob",
-    });
-    return response.data;
-  },
 
   getNextNumber: async () => {
     const response = await api.get("/api/invoices/next-number");
     return response.data;
   },
 
-  checkNumber: async (number, invoiceId = null) => {
+  checkNumber: async (number) => {
     const params = { number };
-    if (invoiceId) params.invoice_id = invoiceId;
     const response = await api.get("/api/invoices/check-number", { params });
     return response.data;
   },

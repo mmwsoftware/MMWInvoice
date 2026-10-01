@@ -7,7 +7,6 @@ export default function InvoiceReview({
   invoiceData,
   products,
   onPrev,
-  onSaveDraft,
 }) {
   const navigate = useNavigate();
   const [success, setSuccess] = useState(false);
@@ -380,13 +379,6 @@ export default function InvoiceReview({
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
             </svg>
             Preview PDF
-          </button>
-          <button
-            type="button"
-            onClick={onSaveDraft}
-            className="inv-btn-secondary"
-          >
-            Save Draft
           </button>
           <button
             type="button"

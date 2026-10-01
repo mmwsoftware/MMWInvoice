@@ -4,7 +4,8 @@ import LetterDetails from "../components/LetterDetails";
 import QuotationDetails from "../components/QuotationDetails";
 import QuotationProductTable from "../components/QuotationProductTable";
 import QuotationPreview from "./QuotationPreview";
-import { customersApi, quotationsApi } from "../../../services/api";
+import { quotationsApi } from "../../../services/api";
+import { validateQuotationInput } from "../../../services/documentHelpers";
 
 const STEPS = [
   { id: 1, name: "Details", label: "Letter Details" },
@@ -18,12 +19,6 @@ export default function QuotationForm() {
   const location = useLocation();
 
   const [currentStep, setCurrentStep] = useState(location.state?.step || 1);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-
-  const [draftId, setDraftId] = useState(location.state?.draftId || null);
-  const [customerId, setCustomerId] = useState(location.state?.customerId || null);
 
   // Form State - blank defaults without mock data
   const [letterData, setLetterData] = useState(() => ({
@@ -108,119 +103,13 @@ export default function QuotationForm() {
     setProducts((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Real backend saving logic
-  const saveQuotationToBackend = async () => {
-    const companyName = letterData.companyName?.trim() || quotationData.companyName?.trim();
-    if (!companyName) {
-      throw new Error("Client / Company Name is required.");
+  const handleProceedToPreview = () => {
+    const error = validateQuotationInput(letterData, quotationData, products);
+    if (error) {
+      alert(error);
+      return;
     }
-    const subject = letterData.subject?.trim() || "Quotation";
-
-    // 1. Get, create, or update customer
-    let cId = customerId;
-    const cleanGstin = quotationData.gstin?.trim().toUpperCase() || null;
-    const addressLines = (letterData.address || quotationData.address || "")
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    const customerPayload = {
-      name: companyName,
-      address_lines: addressLines.length ? addressLines : [companyName],
-      gstin: cleanGstin,
-    };
-
-    try {
-      if (cId) {
-        await customersApi.update(cId, customerPayload);
-      } else {
-        const found = await customersApi.list(companyName);
-        const match = found.find(
-          (c) => c.name.toLowerCase() === companyName.toLowerCase()
-        );
-        if (match) {
-          cId = match.id;
-          await customersApi.update(cId, customerPayload);
-        } else {
-          const created = await customersApi.create(customerPayload);
-          cId = created.id;
-        }
-        setCustomerId(cId);
-      }
-    } catch (err) {
-      console.error("Customer error:", err);
-      throw new Error(err.response?.data?.detail || "Failed to process customer.");
-    }
-
-    // 2. Prepare items
-    const validItems = products
-      .filter((p) => p.description && p.description.trim())
-      .map((p) => ({
-        description: p.description.trim(),
-        hsn: p.hsn?.trim() || "",
-        qty: parseFloat(p.quantity) || 1,
-        uom: p.uom?.trim() || "Nos",
-        rate: parseFloat(p.rate) || 0,
-      }));
-
-    if (validItems.length === 0) {
-      throw new Error("Please add at least one product with a description and rate.");
-    }
-
-    const payload = {
-      customer_id: cId,
-      quotation_date: quotationData.quoteDate || letterData.date || new Date().toISOString().split("T")[0],
-      subject,
-      items: validItems,
-      quotation_number: quotationData.quoteNo?.trim() || null,
-    };
-
-    let result;
-    if (draftId) {
-      result = await quotationsApi.updateDraft(draftId, payload);
-    } else {
-      result = await quotationsApi.saveDraft(payload);
-      setDraftId(result.id);
-    }
-    return result;
-  };
-
-  const handleSaveDraft = async () => {
-    try {
-      setIsSaving(true);
-      const saved = await saveQuotationToBackend();
-      setToastMessage(`Draft #${saved.id} saved successfully!`);
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-    } catch (err) {
-      alert(err.message || "Failed to save draft");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleProceedToPreview = async () => {
-    try {
-      setIsSaving(true);
-      const saved = await saveQuotationToBackend();
-      const quoteNoFinal = saved.quotation_number || quotationData.quoteNo?.trim() || `Draft #${saved.id}`;
-      navigate("/dashboard/quotation/preview", {
-        state: {
-          draftId: saved.id,
-          customerId: saved.customer_id,
-          letterData,
-          quotationData: {
-            ...quotationData,
-            quoteNo: quoteNoFinal,
-          },
-          products,
-        },
-      });
-    } catch (err) {
-      alert("Error: " + (err.message || "Failed to proceed to preview"));
-    } finally {
-      setIsSaving(false);
-    }
+    setCurrentStep(4);
   };
 
   if (currentStep === 4) {
@@ -243,13 +132,6 @@ export default function QuotationForm() {
         padding: "28px 24px",
       }}
     >
-      {/* Toast Alert */}
-      {showToast && (
-        <div className="quot-toast">
-          <span>✓</span> {toastMessage}
-        </div>
-      )}
-
       {/* Top Header */}
       <div
         className="quot-top-header"
@@ -489,18 +371,15 @@ export default function QuotationForm() {
               data={letterData}
               onChange={handleLetterChange}
               onNext={() => setCurrentStep(2)}
-              onSaveDraft={handleSaveDraft}
             />
           )}
 
           {currentStep === 2 && (
             <QuotationDetails
               data={quotationData}
-              draftId={draftId}
               onChange={handleQuotationChange}
               onNext={() => setCurrentStep(3)}
               onPrev={() => setCurrentStep(1)}
-              onSaveDraft={handleSaveDraft}
             />
           )}
 
@@ -512,7 +391,6 @@ export default function QuotationForm() {
               onRemoveProduct={handleRemoveProduct}
               onNext={handleProceedToPreview}
               onPrev={() => setCurrentStep(2)}
-              onSaveDraft={handleSaveDraft}
             />
           )}
 
@@ -616,23 +494,6 @@ export default function QuotationForm() {
         }
         .quot-step-item:hover:not(.quot-step-active) {
           background-color: #f8fafc !important;
-        }
-        .quot-toast {
-          position: fixed;
-          top: 80px;
-          right: 28px;
-          z-index: 100;
-          background-color: #1e293b;
-          color: #ffffff;
-          padding: 12px 20px;
-          border-radius: 10px;
-          font-size: 14px;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-          animation: slideIn 0.3s ease-out;
         }
         .quot-mobile-badge {
           display: none;

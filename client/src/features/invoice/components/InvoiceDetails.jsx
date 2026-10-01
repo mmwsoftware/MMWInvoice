@@ -3,11 +3,9 @@ import { invoicesApi } from "../../../services/api";
 
 export default function InvoiceDetails({
   data,
-  draftId,
   onChange,
   onNext,
   onPrev,
-  onSaveDraft,
 }) {
   const [numberStatus, setNumberStatus] = useState({
     checking: false,
@@ -27,7 +25,7 @@ export default function InvoiceDetails({
 
     const timer = setTimeout(async () => {
       try {
-        const res = await invoicesApi.checkNumber(rawNo, draftId);
+        const res = await invoicesApi.checkNumber(rawNo);
         if (!isCancelled) {
           if (!res.available) {
             setNumberStatus({
@@ -54,7 +52,7 @@ export default function InvoiceDetails({
       isCancelled = true;
       clearTimeout(timer);
     };
-  }, [data.invoiceNo, draftId]);
+  }, [data.invoiceNo]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -250,13 +248,6 @@ export default function InvoiceDetails({
         </button>
 
         <div style={{ display: "flex", gap: "12px" }}>
-          <button
-            type="button"
-            onClick={onSaveDraft}
-            className="inv-btn-secondary"
-          >
-            Save Draft
-          </button>
           <button type="submit" className="inv-btn-primary">
             Next →
           </button>

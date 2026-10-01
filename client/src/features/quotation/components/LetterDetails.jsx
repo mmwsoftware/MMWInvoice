@@ -4,7 +4,6 @@ export default function LetterDetails({
   data,
   onChange,
   onNext,
-  onSaveDraft,
 }) {
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -157,13 +156,6 @@ export default function LetterDetails({
           borderTop: "1px solid #f1f5f9",
         }}
       >
-        <button
-          type="button"
-          onClick={onSaveDraft}
-          className="quot-btn-secondary"
-        >
-          Save Draft
-        </button>
         <button type="submit" className="quot-btn-primary">
           Next →
         </button>

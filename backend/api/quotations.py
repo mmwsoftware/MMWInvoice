@@ -35,6 +35,21 @@ class QuotationDraftCreate(BaseModel):
     quotation_number: str | None = None
 
 
+class QuotationPreviewCustomer(BaseModel):
+    name: str
+    address_lines: list[str] = []
+    gstin: str | None = None
+
+
+class QuotationPreviewRequest(BaseModel):
+    """Form data rendered as a PDF without saving anything."""
+    customer: QuotationPreviewCustomer
+    quotation_date: str = Field(..., description="ISO format: YYYY-MM-DD")
+    subject: str = Field(..., min_length=1, max_length=500)
+    items: list[QuotationItemCreate]
+    quotation_number: str | None = None
+
+
 class QuotationItemResponse(BaseModel):
     id: int
     serial_number: int
@@ -91,6 +106,30 @@ def create_quotation(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {e}")
+
+
+@router.post("/preview")
+def preview_quotation(
+    data: QuotationPreviewRequest,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """Render the real quotation PDF from form data. Saves nothing, uses no number."""
+    from engines.quotation.engine import FieldOverflow
+    try:
+        pdf_bytes = quotation_service.preview_quotation_pdf(db, data.model_dump())
+    except (ValueError, FieldOverflow) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF preview failed: {e}")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": "inline; filename=quotation_preview.pdf",
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 @router.get("", response_model=list[QuotationResponse])

@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from config import get_settings
 from db.models import Quotation, QuotationItem, Customer, AuditLog, NumberCounter
-from services.numbering import allocate_number
+from services.numbering import allocate_number, peek_next_number
 from storage.local import LocalStorage
 
 
@@ -123,6 +123,49 @@ def generate_quotation(db: Session, data: dict) -> Quotation:
             except Exception:
                 pass
         raise
+
+
+def preview_quotation_pdf(db: Session, data: dict) -> bytes:
+    """Render the quotation PDF from form data WITHOUT saving anything.
+
+    No database rows, files or document numbers are created. The number shown is
+    the one the user typed, or the next number that would be assigned.
+    """
+    items = data.get("items") or []
+    if not items:
+        raise ValueError("Quotation has no items")
+
+    customer = data.get("customer") or {}
+    number = (data.get("quotation_number") or "").strip() or peek_next_number(db, "quotation")
+
+    try:
+        q_date = date.fromisoformat(str(data.get("quotation_date")))
+    except ValueError:
+        raise ValueError("Invalid quotation date. Expected YYYY-MM-DD.")
+
+    engine_data = {
+        "quote_no": number,
+        "date": q_date.isoformat(),
+        "subject": str(data.get("subject") or "").strip(),
+        "customer": {
+            "name": customer.get("name") or "",
+            "address_lines": customer.get("address_lines") or [],
+            "gstin": (customer.get("gstin") or "").strip().upper(),
+        },
+        "items": [
+            {
+                "description": it["description"],
+                "hsn": it.get("hsn_code", it.get("hsn", "")) or "",
+                "uom": it.get("uom") or "Nos",
+                "qty": it["qty"],
+                "rate": it["rate"],
+            }
+            for it in items
+        ],
+    }
+
+    from engines.quotation.engine import build
+    return build(engine_data)["pdf"]
 
 
 def _update_quotation_fields(quotation: Quotation, data: dict) -> None:

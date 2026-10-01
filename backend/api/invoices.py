@@ -41,6 +41,28 @@ class InvoiceDraftCreate(BaseModel):
     invoice_number: str | None = None
 
 
+class InvoicePreviewCustomer(BaseModel):
+    name: str
+    address_lines: list[str] = []
+    state_code: str | None = None
+    gstin: str | None = None
+
+
+class InvoicePreviewRequest(BaseModel):
+    """Form data rendered as a PDF without saving anything."""
+    customer: InvoicePreviewCustomer
+    invoice_date: str
+    po_number: str | None = None
+    po_date: str | None = None
+    engineer_name: str | None = None
+    engineer_email: str | None = None
+    engineer_contact: str | None = None
+    copy_type: str = "original"
+    gst_rate: float = 18.0
+    items: list[InvoiceItemCreate]
+    invoice_number: str | None = None
+
+
 class InvoiceItemResponse(BaseModel):
     id: int
     serial_number: int
@@ -103,6 +125,30 @@ def create_invoice(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {e}")
+
+
+@router.post("/preview")
+def preview_invoice(
+    data: InvoicePreviewRequest,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """Render the real invoice PDF from form data. Saves nothing, uses no number."""
+    from engines.invoice.engine import FieldOverflow, MissingGlyph
+    try:
+        pdf_bytes = invoice_service.preview_invoice_pdf(db, data.model_dump())
+    except (ValueError, FieldOverflow, MissingGlyph) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF preview failed: {e}")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": "inline; filename=invoice_preview.pdf",
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 @router.get("", response_model=list[InvoiceResponse])

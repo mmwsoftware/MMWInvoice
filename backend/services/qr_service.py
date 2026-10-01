@@ -94,3 +94,8 @@ def create_qr_image(url: str) -> tuple[bytes, str]:
 
     _verify_qr(image_bytes, url)
     return image_bytes, ext
+
+
+def create_preview_qr(url: str) -> tuple[bytes, str]:
+    """QR for preview PDFs only: always local, never calls a paid QR provider."""
+    return _local_qr(url)
