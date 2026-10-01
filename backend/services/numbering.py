@@ -142,7 +142,10 @@ def allocate_number(
         db.flush()
         sequence = int(row.last_number)
 
-    return f"MAX/{year}/{sequence:04d}"
+    if doc_type == "invoice":
+        return f"MAX/{year}/{sequence:04d}"
+
+    return f"MAX/{year}/S{sequence:04d}"
 
 
 def peek_next_number(
@@ -165,4 +168,7 @@ def peek_next_number(
     last = row.last_number if row is not None else STARTING_SEQUENCES[doc_type]
     sequence = last + 1
 
-    return f"MAX/{year}/{sequence:04d}"
+    if doc_type == "invoice":
+        return f"MAX/{year}/{sequence:04d}"
+
+    return f"MAX/{year}/S{sequence:04d}"

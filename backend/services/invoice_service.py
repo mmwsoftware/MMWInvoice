@@ -8,12 +8,13 @@ from __future__ import annotations
 import hashlib
 from datetime import datetime, timezone
 from decimal import Decimal
+import re
 
 from sqlalchemy.orm import Session
 
 from config import get_settings
 from db.models import (
-    Invoice, InvoiceItem, Customer, PublicLink, AuditLog
+    Invoice, InvoiceItem, Customer, PublicLink, AuditLog, NumberCounter
 )
 from services.numbering import allocate_number
 from services.qr_service import generate_public_token, build_public_url, create_qr_image
@@ -38,155 +39,67 @@ def _audit(db: Session, entity_type: str, entity_id: int,
 
 
 # ──────────────────────────────────────────────────────────
-# Draft operations
+# Generate / issue
 # ──────────────────────────────────────────────────────────
 
-def save_draft(db: Session, data: dict) -> Invoice:
-    """Create or update a draft invoice. No number assigned yet."""
-    invoice_id = data.get("id")
+def _resolve_invoice_number(db: Session, requested: str | None) -> str:
+    """Return a validated invoice number and keep the counter in sync."""
+    if requested and requested.strip():
+        number = requested.strip()
+        match = re.fullmatch(r"MAX/(\d{4})/(\d{4})", number)
+        if not match:
+            raise ValueError("Invalid invoice number. Expected MAX/YYYY/0001 format.")
+
+        existing = db.query(Invoice).filter(Invoice.invoice_number == number).first()
+        if existing:
+            raise ValueError(f"Invoice number '{number}' is already in use.")
+
+        year = int(match.group(1))
+        sequence = int(match.group(2))
+        counter = db.query(NumberCounter).filter(
+            NumberCounter.doc_type == "invoice",
+            NumberCounter.year == year,
+        ).first()
+        if counter is None:
+            db.add(NumberCounter(doc_type="invoice", year=year, last_number=sequence))
+        elif counter.last_number < sequence:
+            counter.last_number = sequence
+        return number
+
+    return allocate_number(db, "invoice")
+
+
+def generate_invoice(db: Session, data: dict) -> Invoice:
+    """Create, generate, store, and issue an invoice in one transaction."""
     customer_id = data.get("customer_id")
-    if not customer_id or not db.query(Customer).filter(Customer.id == customer_id).first():
-        raise ValueError("Customer not found")
-
-    if invoice_id:
-        invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
-        if not invoice:
-            raise ValueError(f"Invoice {invoice_id} not found")
-        if invoice.status != "draft":
-            raise ValueError("Cannot modify an issued invoice. Create a new one.")
-        # Update existing draft
-        _update_invoice_fields(invoice, data, db=db)
-        # Replace items
-        db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.id).delete()
-        _add_items(db, invoice, data.get("items", []))
-    else:
-        # Create new draft
-        invoice = Invoice(
-            status="draft",
-            customer_id=data["customer_id"],
-        )
-        _update_invoice_fields(invoice, data, db=db)
-        db.add(invoice)
-        db.flush()  # Get the ID
-        _add_items(db, invoice, data.get("items", []))
-
-    db.commit()
-    db.refresh(invoice)
-    _audit(db, "invoice", invoice.id, "draft_saved")
-    db.commit()
-    return invoice
-
-
-def _update_invoice_fields(invoice: Invoice, data: dict, db: Session | None = None) -> None:
-    """Update invoice fields from input data."""
-    invoice.customer_id = data.get("customer_id", invoice.customer_id)
-    raw_date = data.get("invoice_date", invoice.invoice_date)
-    if raw_date and "-" in str(raw_date) and len(str(raw_date).split("-")[0]) == 4:
-        parts = str(raw_date).split("-")
-        invoice.invoice_date = f"{parts[2]}.{parts[1]}.{parts[0]}"
-    elif raw_date:
-        invoice.invoice_date = str(raw_date).strip()
-
-    invoice.po_number = data.get("po_number")
-    raw_po_date = data.get("po_date")
-    if raw_po_date and "-" in str(raw_po_date) and len(str(raw_po_date).split("-")[0]) == 4:
-        parts = str(raw_po_date).split("-")
-        invoice.po_date = f"{parts[2]}.{parts[1]}.{parts[0]}"
-    elif raw_po_date:
-        invoice.po_date = str(raw_po_date).strip()
-
-    invoice.engineer_name = data.get("engineer_name")
-    invoice.engineer_email = data.get("engineer_email")
-    invoice.engineer_contact = data.get("engineer_contact")
-    invoice.copy_type = data.get("copy_type", "original")
-    invoice.gst_rate = data.get("gst_rate", 18.0)
-
-    inv_num = data.get("invoice_number")
-    if inv_num and str(inv_num).strip():
-        desired_num = str(inv_num).strip()
-        if db is not None:
-            existing = db.query(Invoice).filter(
-                Invoice.invoice_number == desired_num,
-                Invoice.id != invoice.id
-            ).first()
-            if existing:
-                raise ValueError(f"Invoice number '{desired_num}' is already in use by another invoice.")
-        invoice.invoice_number = desired_num
-
-
-def _add_items(db: Session, invoice: Invoice, items: list[dict]) -> None:
-    """Add line items to an invoice."""
-    for idx, item_data in enumerate(items, start=1):
-        qty = Decimal(str(item_data["qty"]))
-        rate = Decimal(str(item_data["rate"]))
-        amount = (qty * rate).quantize(Decimal("0.01"))
-
-        item = InvoiceItem(
-            invoice_id=invoice.id,
-            serial_number=idx,
-            description=item_data["description"],
-            hsn=item_data.get("hsn", ""),
-            qty=float(qty),
-            uom=item_data.get("uom", "Nos."),
-            rate=rate,
-            amount=amount,
-        )
-        db.add(item)
-
-
-# ──────────────────────────────────────────────────────────
-# Issue (generate number + PDF)
-# ──────────────────────────────────────────────────────────
-
-def issue_invoice(db: Session, invoice_id: int) -> Invoice:
-    """Assign a number, generate/store PDFs, and atomically issue the invoice.
-
-    Database changes and number allocation are committed only after PDF generation
-    and storage succeed. Any failure rolls the SQLAlchemy transaction back and
-    removes PDFs written during the failed attempt.
-    """
-    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
-    if not invoice:
-        raise ValueError(f"Invoice {invoice_id} not found")
-    if invoice.status == "issued":
-        raise ValueError(f"Invoice {invoice_id} is already issued")
-
-    customer = db.query(Customer).filter(Customer.id == invoice.customer_id).first()
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
         raise ValueError("Customer not found")
 
-    items = (
-        db.query(InvoiceItem)
-        .filter(InvoiceItem.invoice_id == invoice.id)
-        .order_by(InvoiceItem.serial_number)
-        .all()
-    )
-    if not items:
+    items_data = data.get("items", [])
+    if not items_data:
         raise ValueError("Invoice has no items")
+
+    invoice = Invoice(status="issued", customer_id=customer_id)
+    _update_invoice_fields(invoice, data)
+    db.add(invoice)
+    db.flush()
+    _add_items(db, invoice, items_data)
+    db.flush()
 
     storage = _get_storage()
     created_paths: list[str] = []
 
     try:
-        # Everything below stays in the caller's transaction until the final commit.
-        if not invoice.invoice_number:
-            invoice_number = allocate_number(db, "invoice")
-            invoice.invoice_number = invoice_number
-        else:
-            existing = db.query(Invoice).filter(
-                Invoice.invoice_number == invoice.invoice_number,
-                Invoice.id != invoice.id
-            ).first()
-            if existing:
-                raise ValueError(f"Invoice number '{invoice.invoice_number}' is already in use.")
-            invoice_number = invoice.invoice_number
+        invoice_number = _resolve_invoice_number(db, data.get("invoice_number"))
+        invoice.invoice_number = invoice_number
 
         token = generate_public_token()
         invoice.public_token = token
         public_url = build_public_url(token)
 
         qr_bytes, qr_ext = create_qr_image(public_url)
-        engine_data = _build_engine_data(invoice, customer, items, db=db)
+        engine_data = _build_engine_data(invoice, customer, db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.id).order_by(InvoiceItem.serial_number).all())
 
         from engines.invoice.engine import build_pdfs
         result = build_pdfs(
@@ -219,12 +132,7 @@ def issue_invoice(db: Session, invoice_id: int) -> Invoice:
         invoice.status = "issued"
         invoice.issued_at = datetime.now(timezone.utc)
 
-        db.add(PublicLink(
-            token=token,
-            invoice_id=invoice.id,
-            is_active=True,
-        ))
-
+        db.add(PublicLink(token=token, invoice_id=invoice.id, is_active=True))
         _audit(db, "invoice", invoice.id, "issued", {
             "invoice_number": invoice_number,
             "total": str(computed["total"]),
@@ -232,15 +140,12 @@ def issue_invoice(db: Session, invoice_id: int) -> Invoice:
             "font_substitutes": result.get("font_substitutes", {}),
         })
 
-        # Commit only after all DB and filesystem work has succeeded.
         db.commit()
         db.refresh(invoice)
         return invoice
 
     except Exception:
-        # Undo the number/document/public-link DB changes.
         db.rollback()
-        # Undo filesystem side effects from this failed attempt.
         for path in reversed(created_paths):
             try:
                 storage.delete(path)
@@ -249,32 +154,44 @@ def issue_invoice(db: Session, invoice_id: int) -> Invoice:
         raise
 
 
+def _update_invoice_fields(invoice: Invoice, data: dict) -> None:
+    invoice.customer_id = data.get("customer_id", invoice.customer_id)
+    invoice.invoice_date = data.get("invoice_date", invoice.invoice_date)
+    invoice.po_number = data.get("po_number")
+    invoice.po_date = data.get("po_date")
+    invoice.engineer_name = data.get("engineer_name")
+    invoice.engineer_email = data.get("engineer_email")
+    invoice.engineer_contact = data.get("engineer_contact")
+    invoice.copy_type = data.get("copy_type", "original")
+    invoice.gst_rate = data.get("gst_rate", 18.0)
+
+
+def _add_items(db: Session, invoice: Invoice, items: list[dict]) -> None:
+    for idx, item_data in enumerate(items, start=1):
+        qty = Decimal(str(item_data["qty"]))
+        rate = Decimal(str(item_data["rate"]))
+        amount = (qty * rate).quantize(Decimal("0.01"))
+        db.add(InvoiceItem(
+            invoice_id=invoice.id,
+            serial_number=idx,
+            description=item_data["description"],
+            hsn=item_data.get("hsn_code", item_data.get("hsn", "")),
+            qty=float(qty),
+            uom=item_data.get("uom", "Nos."),
+            rate=rate,
+            amount=amount,
+        ))
+
+
 def _build_engine_data(
     invoice: Invoice,
     customer: Customer,
     items: list[InvoiceItem],
-    db: Session | None = None,
 ) -> dict:
     """Build the data dict expected by the invoice engine's build_pdfs()."""
-    inv_num = invoice.invoice_number
-    if not inv_num and db is not None:
-        try:
-            from services.numbering import peek_next_number
-            inv_num = peek_next_number(db, "invoice")
-        except Exception:
-            inv_num = None
-    if not inv_num:
-        from datetime import date
-        inv_num = f"MAX/{date.today().year}/0001"
-
-    inv_date = invoice.invoice_date or datetime.now().strftime("%d.%m.%Y")
-    if "-" in str(inv_date) and len(str(inv_date).split("-")[0]) == 4:
-        parts = str(inv_date).split("-")
-        inv_date = f"{parts[2]}.{parts[1]}.{parts[0]}"
-
     return {
-        "invoice_no": inv_num,
-        "invoice_date": inv_date,
+        "invoice_no": invoice.invoice_number,
+        "invoice_date": invoice.invoice_date,
         "po_no": invoice.po_number or "",
         "po_date": invoice.po_date or "",
         "copy_type": invoice.copy_type or "original",
@@ -287,7 +204,7 @@ def _build_engine_data(
         "customer": {
             "name": customer.name,
             "address_lines": customer.address_lines or [],
-            "state_code": customer.state_code or "33",
+            "state_code": customer.state_code or "",
             "gstin": customer.gstin or "",
         },
         "items": [
@@ -301,40 +218,6 @@ def _build_engine_data(
             for item in items
         ],
     }
-
-
-def preview_invoice_pdf(db: Session, invoice_id: int) -> bytes:
-    """Generate in-memory preview of invoice PDF without committing number or locking."""
-    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
-    if not invoice:
-        raise ValueError(f"Invoice {invoice_id} not found")
-
-    customer = db.query(Customer).filter(Customer.id == invoice.customer_id).first()
-    if not customer:
-        raise ValueError("Customer not found")
-
-    items = (
-        db.query(InvoiceItem)
-        .filter(InvoiceItem.invoice_id == invoice.id)
-        .order_by(InvoiceItem.serial_number)
-        .all()
-    )
-    if not items:
-        raise ValueError("Invoice has no items")
-
-    token = invoice.public_token or generate_public_token()
-    public_url = build_public_url(token)
-    qr_bytes, qr_ext = create_qr_image(public_url)
-    engine_data = _build_engine_data(invoice, customer, items, db=db)
-
-    from engines.invoice.engine import build_pdfs
-    result = build_pdfs(
-        engine_data,
-        qr_bytes=qr_bytes,
-        qr_ext=qr_ext,
-        public_url=public_url,
-    )
-    return result["pdfs"]["full"]
 
 
 # ──────────────────────────────────────────────────────────
@@ -354,23 +237,13 @@ def list_invoices(
     limit: int = 50,
 ) -> list[Invoice]:
     q = db.query(Invoice).join(Customer)
-
     if status:
         q = q.filter(Invoice.status == status)
-
     if search and search.strip():
         term = f"%{search.strip()}%"
-        q = q.filter(
-            Invoice.invoice_number.ilike(term)
-            | Customer.name.ilike(term)
-        )
+        q = q.filter(Invoice.invoice_number.ilike(term) | Customer.name.ilike(term))
+    return q.order_by(Invoice.id.desc()).offset(skip).limit(limit).all()
 
-    return (
-        q.order_by(Invoice.id.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
 
 def get_invoice_pdf(db: Session, invoice_id: int, public: bool = False) -> bytes:
     """Retrieve PDF bytes for an invoice."""
@@ -406,36 +279,3 @@ def get_public_invoice_pdf(db: Session, token: str) -> bytes:
     link.last_accessed_at = datetime.now(timezone.utc)
     db.commit()
     return storage.get_pdf(invoice.public_pdf_path)
-
-
-def delete_invoice(db: Session, invoice_id: int) -> bool:
-    """Delete an invoice, its items, public links, and its PDFs from disk."""
-    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
-    if not invoice:
-        raise ValueError(f"Invoice {invoice_id} not found")
-
-    storage = _get_storage()
-    for path in (invoice.private_pdf_path, invoice.public_pdf_path):
-        if path:
-            try:
-                storage.delete(path)
-            except Exception:
-                pass
-
-    # Delete public links & items
-    db.query(PublicLink).filter(PublicLink.invoice_id == invoice.id).delete()
-    db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.id).delete()
-
-    # Log audit
-    _audit(
-        db,
-        "invoice",
-        invoice.id,
-        "invoice_deleted",
-        details={"invoice_number": invoice.invoice_number, "status": invoice.status},
-    )
-
-    # Delete the invoice row
-    db.delete(invoice)
-    db.commit()
-    return True

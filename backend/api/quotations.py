@@ -19,10 +19,12 @@ router = APIRouter()
 
 class QuotationItemCreate(BaseModel):
     description: str
-    hsn: str = ""
+    hsn: str = Field("", alias="hsn_code")
     qty: float
     uom: str = "Nos"
     rate: float
+
+    model_config = {"populate_by_name": True}
 
 
 class QuotationDraftCreate(BaseModel):
@@ -77,29 +79,14 @@ class QuotationResponse(BaseModel):
 # ── Endpoints ─────────────────────────────────────────────
 
 @router.post("", response_model=QuotationResponse)
-def create_or_update_draft(
+def create_quotation(
     data: QuotationDraftCreate,
     db: Session = Depends(get_db),
     _user: str = Depends(get_current_user),
 ):
-    """Save a draft quotation (no number assigned yet)."""
+    """Generate and issue a quotation in one operation. No drafts are created."""
     try:
-        quotation = quotation_service.save_draft(db, data.model_dump())
-        return quotation
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/{quotation_id}/issue", response_model=QuotationResponse)
-def issue(
-    quotation_id: int,
-    db: Session = Depends(get_db),
-    _user: str = Depends(get_current_user),
-):
-    """Assign a number, generate PDF, and lock the quotation."""
-    try:
-        quotation = quotation_service.issue_quotation(db, quotation_id)
-        return quotation
+        return quotation_service.generate_quotation(db, data.model_dump())
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -110,7 +97,7 @@ def issue(
 def list_quotations(
     status: str | None = Query(
         None,
-        description="Filter by status: draft, issued",
+        description="Filter by status: issued",
     ),
     search: str | None = Query(
         None,
@@ -145,15 +132,12 @@ def get_next_quotation_number(
 @router.get("/check-number")
 def check_quotation_number(
     number: str = Query(..., min_length=1),
-    quotation_id: int | None = Query(None),
     db: Session = Depends(get_db),
     _user: str = Depends(get_current_user),
 ):
     """Check if a quotation number is available or already used."""
     from db.models import Quotation
     q = db.query(Quotation).filter(Quotation.quotation_number == number.strip())
-    if quotation_id:
-        q = q.filter(Quotation.id != quotation_id)
     exists = q.first() is not None
     return {"available": not exists, "number": number.strip()}
 
@@ -189,45 +173,6 @@ def get_quotation_pdf(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-
-
-@router.get("/{quotation_id}/preview-pdf")
-def get_quotation_preview_pdf(
-    quotation_id: int,
-    db: Session = Depends(get_db),
-    _user: str = Depends(get_current_user),
-):
-    """Generate and stream a preview of the quotation PDF for drafts."""
-    try:
-        pdf_bytes = quotation_service.preview_quotation_pdf(db, quotation_id)
-        return Response(
-            content=pdf_bytes,
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": f"inline; filename=preview_quotation_{quotation_id}.pdf"
-            },
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"PDF preview generation failed: {e}")
-
-
-@router.put("/{quotation_id}", response_model=QuotationResponse)
-def update_draft(
-    quotation_id: int,
-    data: QuotationDraftCreate,
-    db: Session = Depends(get_db),
-    _user: str = Depends(get_current_user),
-):
-    """Update an existing draft quotation."""
-    try:
-        update_data = data.model_dump()
-        update_data["id"] = quotation_id
-        quotation = quotation_service.save_draft(db, update_data)
-        return quotation
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/{quotation_id}")

@@ -19,10 +19,12 @@ router = APIRouter()
 
 class InvoiceItemCreate(BaseModel):
     description: str
-    hsn: str = ""
+    hsn: str = Field("", alias="hsn_code")
     qty: float
     uom: str = "Nos."
     rate: float
+
+    model_config = {"populate_by_name": True}
 
 
 class InvoiceDraftCreate(BaseModel):
@@ -89,33 +91,16 @@ class InvoiceResponse(BaseModel):
 # ── Endpoints ─────────────────────────────────────────────
 
 @router.post("", response_model=InvoiceResponse)
-def create_or_update_draft(
+def create_invoice(
     data: InvoiceDraftCreate,
     db: Session = Depends(get_db),
     _user: str = Depends(get_current_user),
 ):
-    """Save a draft invoice (no number assigned yet)."""
+    """Generate and issue an invoice in one operation. No drafts are created."""
     try:
-        invoice = invoice_service.save_draft(db, data.model_dump())
-        return invoice
+        return invoice_service.generate_invoice(db, data.model_dump())
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/{invoice_id}/issue", response_model=InvoiceResponse)
-def issue(
-    invoice_id: int,
-    db: Session = Depends(get_db),
-    _user: str = Depends(get_current_user),
-):
-    """Assign a number, generate PDF, and lock the invoice."""
-    try:
-        invoice = invoice_service.issue_invoice(db, invoice_id)
-        return invoice
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except NotImplementedError as e:
-        raise HTTPException(status_code=501, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {e}")
 
@@ -124,7 +109,7 @@ def issue(
 def list_invoices(
     status: str | None = Query(
         None,
-        description="Filter by status: draft, issued",
+        description="Filter by status: issued",
     ),
     search: str | None = Query(
         None,
@@ -159,15 +144,12 @@ def get_next_invoice_number(
 @router.get("/check-number")
 def check_invoice_number(
     number: str = Query(..., min_length=1),
-    invoice_id: int | None = Query(None),
     db: Session = Depends(get_db),
     _user: str = Depends(get_current_user),
 ):
     """Check if an invoice number is available or already used."""
     from db.models import Invoice
     q = db.query(Invoice).filter(Invoice.invoice_number == number.strip())
-    if invoice_id:
-        q = q.filter(Invoice.id != invoice_id)
     exists = q.first() is not None
     return {"available": not exists, "number": number.strip()}
 
@@ -201,43 +183,6 @@ def get_invoice_pdf(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-
-
-@router.get("/{invoice_id}/preview-pdf")
-def get_invoice_preview_pdf(
-    invoice_id: int,
-    db: Session = Depends(get_db),
-    _user: str = Depends(get_current_user),
-):
-    """Generate and stream a preview of the invoice PDF for drafts."""
-    try:
-        pdf_bytes = invoice_service.preview_invoice_pdf(db, invoice_id)
-        return Response(
-            content=pdf_bytes,
-            media_type="application/pdf",
-            headers={"Content-Disposition": f"inline; filename=preview_invoice_{invoice_id}.pdf"},
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"PDF preview generation failed: {e}")
-
-
-@router.put("/{invoice_id}", response_model=InvoiceResponse)
-def update_draft(
-    invoice_id: int,
-    data: InvoiceDraftCreate,
-    db: Session = Depends(get_db),
-    _user: str = Depends(get_current_user),
-):
-    """Update an existing draft invoice."""
-    try:
-        update_data = data.model_dump()
-        update_data["id"] = invoice_id
-        invoice = invoice_service.save_draft(db, update_data)
-        return invoice
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/{invoice_id}")
