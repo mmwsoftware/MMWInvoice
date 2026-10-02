@@ -2,20 +2,22 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PdfPreviewFrame from "../../../components/PdfPreviewFrame";
 import QuotationGeneratedSuccess from "../components/QuotationGeneratedSuccess";
-import { generateQuotation, previewQuotation } from "../../../services/documentHelpers";
+import {
+  generateQuotation,
+  previewQuotation,
+} from "../../../services/documentHelpers";
 
 export default function QuotationPreview({
   letterData: propLetter,
   quotationData: propQuote,
   products: propProducts,
   onEdit,
+  onCreateAnother,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-
-  const letterData =
-    propLetter ||
+  const letterData = propLetter ||
     location.state?.letterData || {
       companyName: "",
       address: "",
@@ -23,8 +25,7 @@ export default function QuotationPreview({
       subject: "",
     };
 
-  const quotationData =
-    propQuote ||
+  const quotationData = propQuote ||
     location.state?.quotationData || {
       quoteNo: "Auto-assigned on issue",
       quoteDate: new Date().toISOString().split("T")[0],
@@ -33,8 +34,7 @@ export default function QuotationPreview({
       gstin: "",
     };
 
-  const products =
-    propProducts ||
+  const products = propProducts ||
     location.state?.products || [
       {
         description: "",
@@ -49,13 +49,11 @@ export default function QuotationPreview({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedQuotation, setGeneratedQuotation] = useState(null);
 
-
   const totalAmount = products.reduce((acc, item) => {
     const qty = parseFloat(item.quantity) || 0;
     const rate = parseFloat(item.rate) || 0;
     return acc + qty * rate;
   }, 0);
-
 
   const handleEdit = () => {
     if (onEdit) {
@@ -77,14 +75,18 @@ export default function QuotationPreview({
     setIsGenerating(true);
     try {
       // One call: validates, creates the customer if needed, numbers and issues the quotation.
-      const issued = await generateQuotation({ letterData, quotationData, products });
+      const issued = await generateQuotation({
+        letterData,
+        quotationData,
+        products,
+      });
       setGeneratedQuotation(issued);
       setIsGenerated(true);
     } catch (err) {
       console.error("Quotation generation error:", err);
       alert(
         "Failed to generate quotation: " +
-          (err.response?.data?.detail || err.message)
+          (err.response?.data?.detail || err.message),
       );
     } finally {
       setIsGenerating(false);
@@ -104,6 +106,7 @@ export default function QuotationPreview({
         <QuotationGeneratedSuccess
           quotation={generatedQuotation}
           onBackToPreview={() => setIsGenerated(false)}
+          onCreateAnother={onCreateAnother}
         />
       ) : (
         <>
@@ -164,18 +167,42 @@ export default function QuotationPreview({
                 Document Summary
               </h3>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "3px",
+                    }}
+                  >
                     Document Type
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#2563eb" }}>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#2563eb",
+                    }}
+                  >
                     Sales Quotation
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "3px",
+                    }}
+                  >
                     Quote No.
                   </div>
                   <div
@@ -191,34 +218,82 @@ export default function QuotationPreview({
                 </div>
 
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "3px",
+                    }}
+                  >
                     Date
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0f172a",
+                    }}
+                  >
                     {quotationData.quoteDate || letterData.date}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "3px",
+                    }}
+                  >
                     Client
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", lineHeight: "1.4" }}>
-                    {quotationData.companyName || letterData.companyName || "Client"}
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0f172a",
+                      lineHeight: "1.4",
+                    }}
+                  >
+                    {quotationData.companyName ||
+                      letterData.companyName ||
+                      "Client"}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "3px",
+                    }}
+                  >
                     Total Amount
                   </div>
-                  <div style={{ fontSize: "19px", fontWeight: 800, color: "#0f172a" }}>
-                    ₹{totalAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                  <div
+                    style={{
+                      fontSize: "19px",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                    }}
+                  >
+                    ₹
+                    {totalAmount.toLocaleString("en-IN", {
+                      maximumFractionDigits: 2,
+                    })}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "6px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "6px",
+                    }}
+                  >
                     Status
                   </div>
                   <span
@@ -318,7 +393,9 @@ export default function QuotationPreview({
                 }}
               >
                 <PdfPreviewFrame
-                  load={() => previewQuotation({ letterData, quotationData, products })}
+                  load={() =>
+                    previewQuotation({ letterData, quotationData, products })
+                  }
                   onEdit={handleEdit}
                   title="Quotation PDF preview"
                 />

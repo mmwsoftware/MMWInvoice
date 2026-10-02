@@ -24,15 +24,25 @@ export default function QuotationForm() {
   const [letterData, setLetterData] = useState(() => ({
     companyName: location.state?.letterData?.companyName || "",
     address: location.state?.letterData?.address || "",
-    date: location.state?.letterData?.date || new Date().toISOString().split("T")[0],
+    date:
+      location.state?.letterData?.date ||
+      new Date().toISOString().split("T")[0],
     subject: location.state?.letterData?.subject || "",
   }));
 
   const [quotationData, setQuotationData] = useState(() => ({
     quoteNo: location.state?.quotationData?.quoteNo || "",
-    quoteDate: location.state?.quotationData?.quoteDate || new Date().toISOString().split("T")[0],
-    companyName: location.state?.quotationData?.companyName || location.state?.letterData?.companyName || "",
-    address: location.state?.quotationData?.address || location.state?.letterData?.address || "",
+    quoteDate:
+      location.state?.quotationData?.quoteDate ||
+      new Date().toISOString().split("T")[0],
+    companyName:
+      location.state?.quotationData?.companyName ||
+      location.state?.letterData?.companyName ||
+      "",
+    address:
+      location.state?.quotationData?.address ||
+      location.state?.letterData?.address ||
+      "",
     gstin: location.state?.quotationData?.gstin || "",
   }));
 
@@ -67,7 +77,7 @@ export default function QuotationForm() {
           console.error("Failed to fetch next quotation number:", err);
         });
     }
-  }, []);
+  }, [quotationData.quoteNo]);
 
   // Handlers
   const handleLetterChange = (field, value) => {
@@ -112,6 +122,26 @@ export default function QuotationForm() {
     setCurrentStep(4);
   };
 
+  const handleCreateAnother = () => {
+    setLetterData({
+      companyName: "",
+      address: "",
+      date: new Date().toISOString().split("T")[0],
+      subject: "",
+    });
+    setQuotationData({
+      quoteNo: "",
+      quoteDate: new Date().toISOString().split("T")[0],
+      companyName: "",
+      address: "",
+      gstin: "",
+    });
+    setProducts([
+      { description: "", hsn: "", uom: "Nos", quantity: 1, rate: "" },
+    ]);
+    setCurrentStep(1);
+  };
+
   if (currentStep === 4) {
     return (
       <QuotationPreview
@@ -119,6 +149,7 @@ export default function QuotationForm() {
         quotationData={quotationData}
         products={products}
         onEdit={() => setCurrentStep(3)}
+        onCreateAnother={handleCreateAnother}
       />
     );
   }
@@ -152,7 +183,14 @@ export default function QuotationForm() {
           >
             ← Back
           </button>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginTop: "4px",
+            }}
+          >
             <h1
               style={{
                 fontSize: "24px",
@@ -163,9 +201,7 @@ export default function QuotationForm() {
             >
               Create Sales Quotation
             </h1>
-            <span className="quot-mobile-badge">
-              Step {currentStep}/4
-            </span>
+            <span className="quot-mobile-badge">Step {currentStep}/4</span>
           </div>
         </div>
 
@@ -210,18 +246,18 @@ export default function QuotationForm() {
                       backgroundColor: isActive
                         ? "#2563eb"
                         : isCompleted
-                        ? "#dbeafe"
-                        : "#f1f5f9",
+                          ? "#dbeafe"
+                          : "#f1f5f9",
                       color: isActive
                         ? "#ffffff"
                         : isCompleted
-                        ? "#1d4ed8"
-                        : "#94a3b8",
+                          ? "#1d4ed8"
+                          : "#94a3b8",
                       border: isActive
                         ? "2px solid #2563eb"
                         : isCompleted
-                        ? "2px solid #93c5fd"
-                        : "2px solid transparent",
+                          ? "2px solid #93c5fd"
+                          : "2px solid transparent",
                       transition: "all 0.3s ease",
                     }}
                   >
@@ -234,8 +270,8 @@ export default function QuotationForm() {
                       color: isActive
                         ? "#1d4ed8"
                         : isCompleted
-                        ? "#334155"
-                        : "#94a3b8",
+                          ? "#334155"
+                          : "#94a3b8",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -314,8 +350,8 @@ export default function QuotationForm() {
                   color: isActive
                     ? "#1d4ed8"
                     : isCompleted
-                    ? "#334155"
-                    : "#64748b",
+                      ? "#334155"
+                      : "#64748b",
                   cursor: step.id <= currentStep ? "pointer" : "default",
                   textAlign: "left",
                   fontSize: "14px",
@@ -337,13 +373,11 @@ export default function QuotationForm() {
                     backgroundColor: isActive
                       ? "#2563eb"
                       : isCompleted
-                      ? "#3b82f6"
-                      : "transparent",
+                        ? "#3b82f6"
+                        : "transparent",
                     color: isActive || isCompleted ? "#ffffff" : "#94a3b8",
                     border:
-                      isActive || isCompleted
-                        ? "none"
-                        : "1.5px solid #cbd5e1",
+                      isActive || isCompleted ? "none" : "1.5px solid #cbd5e1",
                     flexShrink: 0,
                   }}
                 >
