@@ -2,11 +2,31 @@ import React, { useState, useEffect } from "react";
 import HistoryFilters from "../components/HistoryFilters";
 import HistoryTable from "../components/HistoryTable";
 import { quotationsApi, invoicesApi } from "../../../services/api";
+import { parseDocDate, formatDisplayDate, inDateRange } from "../utils/dates";
+
+// The API returns at most 200 rows per request (50 by default), so read every
+// page. Otherwise older documents would never reach the History filters.
+const PAGE_SIZE = 200;
+
+async function fetchAll(listFn) {
+  const all = [];
+  for (let skip = 0; ; skip += PAGE_SIZE) {
+    const page = await listFn({ skip, limit: PAGE_SIZE });
+    if (!Array.isArray(page)) break;
+    all.push(...page);
+    if (page.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
+// Document date as YYYY-MM-DD (falls back to the creation time).
+const docDate = (value, createdAt) => parseDocDate(value) || parseDocDate(createdAt);
 
 export default function History() {
   const [mounted, setMounted] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
   const [currentPage, setCurrentPage] = useState(1);
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +39,7 @@ export default function History() {
     try {
       setLoading(true);
       // Fetch quotations (and invoices if needed)
-      const quotData = await quotationsApi.list();
+      const quotData = await fetchAll(quotationsApi.list);
       let combined = [];
 
       if (Array.isArray(quotData)) {
@@ -28,7 +48,8 @@ export default function History() {
           type: "Sales Quotation",
           docNo: q.quotation_number || `Draft #${q.id}`,
           customer: q.customer?.name || `Customer #${q.customer_id}`,
-          date: q.quotation_date || (q.created_at ? new Date(q.created_at).toLocaleDateString("en-IN") : "-"),
+          dateIso: docDate(q.quotation_date, q.created_at),
+          date: formatDisplayDate(docDate(q.quotation_date, q.created_at)),
           amount: q.total_amount
             ? `₹${Number(q.total_amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
             : "₹0.00",
@@ -39,14 +60,15 @@ export default function History() {
 
       // Try fetching invoices as well if endpoint available
       try {
-        const invData = await invoicesApi.list();
+        const invData = await fetchAll(invoicesApi.list);
         if (Array.isArray(invData)) {
           const formattedInv = invData.map((inv) => ({
             id: inv.id,
             type: "Tax Invoice",
             docNo: inv.invoice_number || `Draft #${inv.id}`,
             customer: inv.customer?.name || `Customer #${inv.customer_id}`,
-            date: inv.invoice_date || (inv.created_at ? new Date(inv.created_at).toLocaleDateString("en-IN") : "-"),
+            dateIso: docDate(inv.invoice_date, inv.created_at),
+            date: formatDisplayDate(docDate(inv.invoice_date, inv.created_at)),
             amount: inv.total_amount
               ? `₹${Number(inv.total_amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
               : "₹0.00",
@@ -87,7 +109,9 @@ export default function History() {
       doc.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.docNo.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesFilter && matchesSearch;
+    const matchesDate = inDateRange(doc.dateIso, dateRange.from, dateRange.to);
+
+    return matchesFilter && matchesSearch && matchesDate;
   });
 
   // Pagination
@@ -176,6 +200,8 @@ export default function History() {
         setActiveFilter={setActiveFilter}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        dateRange={dateRange}
+        setDateRange={setDateRange}
         setCurrentPage={setCurrentPage}
       />
 

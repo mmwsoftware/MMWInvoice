@@ -275,3 +275,27 @@ def get_quotation_pdf(db: Session, quotation_id: int) -> bytes:
     if not quotation.pdf_path:
         raise ValueError("PDF not found")
     return storage.get_pdf(quotation.pdf_path)
+
+
+def delete_quotation(db: Session, quotation_id: int) -> None:
+    quotation = get_quotation(db, quotation_id)
+    if not quotation:
+        raise ValueError("Quotation not found")
+
+    storage = _get_storage()
+
+    try:
+        if quotation.pdf_path:
+            storage.delete(quotation.pdf_path)
+
+        db.query(QuotationItem).filter(
+            QuotationItem.quotation_id == quotation_id
+        ).delete(synchronize_session=False)
+        _audit(db, "quotation", quotation_id, "deleted", {
+            "quotation_number": quotation.quotation_number,
+        })
+        db.delete(quotation)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise

@@ -1,26 +1,54 @@
 import React from "react";
 
 const stateOptions = [
-  { code: "33", name: "33 - Tamil Nadu" },
+  { code: "01", name: "01 - Jammu and Kashmir" },
+  { code: "02", name: "02 - Himachal Pradesh" },
+  { code: "03", name: "03 - Punjab" },
+  { code: "04", name: "04 - Chandigarh" },
+  { code: "05", name: "05 - Uttarakhand" },
+  { code: "06", name: "06 - Haryana" },
+  { code: "07", name: "07 - Delhi" },
+  { code: "08", name: "08 - Rajasthan" },
+  { code: "09", name: "09 - Uttar Pradesh" },
+  { code: "10", name: "10 - Bihar" },
+  { code: "11", name: "11 - Sikkim" },
+  { code: "12", name: "12 - Arunachal Pradesh" },
+  { code: "13", name: "13 - Nagaland" },
+  { code: "14", name: "14 - Manipur" },
+  { code: "15", name: "15 - Mizoram" },
+  { code: "16", name: "16 - Tripura" },
+  { code: "17", name: "17 - Meghalaya" },
+  { code: "18", name: "18 - Assam" },
+  { code: "19", name: "19 - West Bengal" },
+  { code: "20", name: "20 - Jharkhand" },
+  { code: "21", name: "21 - Odisha" },
+  { code: "22", name: "22 - Chhattisgarh" },
+  { code: "23", name: "23 - Madhya Pradesh" },
+  { code: "24", name: "24 - Gujarat" },
+  { code: "26", name: "26 - Dadra and Nagar Haveli and Daman and Diu" },
+  { code: "27", name: "27 - Maharashtra" },
   { code: "29", name: "29 - Karnataka" },
+  { code: "30", name: "30 - Goa" },
+  { code: "31", name: "31 - Lakshadweep" },
   { code: "32", name: "32 - Kerala" },
+  { code: "33", name: "33 - Tamil Nadu" },
+  { code: "34", name: "34 - Puducherry" },
+  { code: "35", name: "35 - Andaman and Nicobar Islands" },
   { code: "36", name: "36 - Telangana" },
   { code: "37", name: "37 - Andhra Pradesh" },
-  { code: "27", name: "27 - Maharashtra" },
-  { code: "07", name: "07 - Delhi" },
-  { code: "24", name: "24 - Gujarat" },
-  { code: "09", name: "09 - Uttar Pradesh" },
-  { code: "19", name: "19 - West Bengal" },
+  { code: "38", name: "38 - Ladakh" },
+  { code: "97", name: "97 - Other Territory" },
 ];
 
-export default function CustomerDetails({
-  data,
-  onChange,
-  onNext,
-}) {
-  const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+export default function CustomerDetails({ data, onChange, onNext }) {
+  const GSTIN_REGEX =
+    /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
   const gstinTrimmed = (data.gstin || "").trim().toUpperCase();
-  const isGstinInvalid = gstinTrimmed.length > 0 && !GSTIN_REGEX.test(gstinTrimmed);
+  const isGstinInvalid =
+    gstinTrimmed.length > 0 && !GSTIN_REGEX.test(gstinTrimmed);
+  const gstinStateCode = gstinTrimmed.substring(0, 2);
+  const isGstinStateMismatch =
+    GSTIN_REGEX.test(gstinTrimmed) && gstinStateCode !== data.stateCode;
 
   const handleGstinChange = (val) => {
     const clean = val.toUpperCase().replace(/\s/g, "");
@@ -45,7 +73,15 @@ export default function CustomerDetails({
       return;
     }
     if (isGstinInvalid) {
-      alert(`GSTIN "${gstinTrimmed}" is invalid. Please enter a valid 15-character GSTIN (e.g. 33AABCG1234F1Z5) or leave blank if unregistered.`);
+      alert(
+        `GSTIN "${gstinTrimmed}" is invalid. Please enter a valid 15-character GSTIN (e.g. 33AABCG1234F1Z5) or leave blank if unregistered.`,
+      );
+      return;
+    }
+    if (isGstinStateMismatch) {
+      alert(
+        `GSTIN state code ${gstinStateCode} does not match the selected state code ${data.stateCode}.`,
+      );
       return;
     }
     onNext();
@@ -76,7 +112,8 @@ export default function CustomerDetails({
               marginBottom: "6px",
             }}
           >
-            Customer / Participant Name <span style={{ color: "#ef4444" }}>*</span>
+            Customer / Participant Name{" "}
+            <span style={{ color: "#ef4444" }}>*</span>
           </label>
           <input
             type="text"
@@ -169,12 +206,35 @@ export default function CustomerDetails({
               className="inv-input"
               style={{
                 textTransform: "uppercase",
-                borderColor: isGstinInvalid ? "#ef4444" : undefined,
+                borderColor:
+                  isGstinInvalid || isGstinStateMismatch
+                    ? "#ef4444"
+                    : undefined,
               }}
             />
             {isGstinInvalid && (
-              <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "4px", margin: "4px 0 0 0" }}>
+              <p
+                style={{
+                  fontSize: "12px",
+                  color: "#ef4444",
+                  marginTop: "4px",
+                  margin: "4px 0 0 0",
+                }}
+              >
                 GSTIN must be 15 characters (e.g. 33AABCT0000A1Z5) or blank.
+              </p>
+            )}
+            {isGstinStateMismatch && (
+              <p
+                style={{
+                  fontSize: "12px",
+                  color: "#ef4444",
+                  marginTop: "4px",
+                  margin: "4px 0 0 0",
+                }}
+              >
+                GSTIN state code {gstinStateCode} does not match the selected
+                state.
               </p>
             )}
           </div>

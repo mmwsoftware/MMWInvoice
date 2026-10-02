@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { quotationsApi } from "../../../services/api";
+import { invoicesApi, quotationsApi } from "../../../services/api";
 
 function getTypeColor(type) {
   if (type === "Sales Quotation") return "#2563eb";
   if (type === "Tax Invoice") return "#059669";
   return "#7c3aed";
+}
+
+function getTimestamp(...values) {
+  const value = values.find(Boolean);
+  const timestamp = value ? new Date(value).getTime() : 0;
+  return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
 export default function RecentDocuments({ mounted }) {
@@ -17,8 +23,79 @@ export default function RecentDocuments({ mounted }) {
     async function loadRecentDocs() {
       try {
         setLoading(true);
-        const data = await quotationsApi.list({ limit: 5 });
-        setDocuments(Array.isArray(data) ? data : []);
+        const [quotationsResult, invoicesResult] = await Promise.allSettled([
+          quotationsApi.list({ limit: 5 }),
+          invoicesApi.list({ limit: 5 }),
+        ]);
+
+        if (quotationsResult.status === "rejected") {
+          console.error(
+            "Failed to load recent quotations:",
+            quotationsResult.reason,
+          );
+        }
+        if (invoicesResult.status === "rejected") {
+          console.error(
+            "Failed to load recent invoices:",
+            invoicesResult.reason,
+          );
+        }
+
+        const quotations =
+          quotationsResult.status === "fulfilled" &&
+          Array.isArray(quotationsResult.value)
+            ? quotationsResult.value.map((doc) => ({
+                id: doc.id,
+                type: "Sales Quotation",
+                docNo: doc.quotation_number || `Draft #${doc.id}`,
+                customer: doc.customer?.name || `Customer #${doc.customer_id}`,
+                date:
+                  doc.quotation_date ||
+                  (doc.created_at
+                    ? new Date(doc.created_at).toLocaleDateString("en-IN")
+                    : "-"),
+                amount: doc.total_amount
+                  ? `₹${Number(doc.total_amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
+                  : "₹0.00",
+                status: doc.status,
+                timestamp: getTimestamp(
+                  doc.issued_at,
+                  doc.created_at,
+                  doc.quotation_date,
+                ),
+              }))
+            : [];
+
+        const invoices =
+          invoicesResult.status === "fulfilled" &&
+          Array.isArray(invoicesResult.value)
+            ? invoicesResult.value.map((doc) => ({
+                id: doc.id,
+                type: "Tax Invoice",
+                docNo: doc.invoice_number || `Draft #${doc.id}`,
+                customer: doc.customer?.name || `Customer #${doc.customer_id}`,
+                date:
+                  doc.invoice_date ||
+                  (doc.created_at
+                    ? new Date(doc.created_at).toLocaleDateString("en-IN")
+                    : "-"),
+                amount: doc.total_amount
+                  ? `₹${Number(doc.total_amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
+                  : "₹0.00",
+                status: doc.status,
+                timestamp: getTimestamp(
+                  doc.issued_at,
+                  doc.created_at,
+                  doc.invoice_date,
+                ),
+              }))
+            : [];
+
+        setDocuments(
+          [...quotations, ...invoices]
+            .sort((left, right) => right.timestamp - left.timestamp)
+            .slice(0, 5),
+        );
       } catch (err) {
         console.error("Failed to load recent documents:", err);
         setDocuments([]);
@@ -32,12 +109,18 @@ export default function RecentDocuments({ mounted }) {
   const handleRowClick = async (doc) => {
     if (doc.status === "issued") {
       try {
-        await quotationsApi.viewPdfInNewTab(doc.id);
+        const documentsApi =
+          doc.type === "Tax Invoice" ? invoicesApi : quotationsApi;
+        await documentsApi.viewPdfInNewTab(doc.id);
       } catch (err) {
         console.error("Failed to view PDF:", err);
       }
     } else {
-      navigate("/dashboard/quotation");
+      navigate(
+        doc.type === "Tax Invoice"
+          ? "/dashboard/invoice"
+          : "/dashboard/quotation",
+      );
     }
   };
 
@@ -96,7 +179,13 @@ export default function RecentDocuments({ mounted }) {
           }}
         >
           <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "750px" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                minWidth: "750px",
+              }}
+            >
               <thead>
                 <tr
                   style={{
@@ -104,30 +193,42 @@ export default function RecentDocuments({ mounted }) {
                     backgroundColor: "#f8fafc",
                   }}
                 >
-                  <th className="rd-th" style={{ width: "18%" }}>Document Type</th>
-                  <th className="rd-th" style={{ width: "18%" }}>Document No.</th>
-                  <th className="rd-th" style={{ width: "26%" }}>Customer</th>
-                  <th className="rd-th" style={{ width: "20%" }}>Date</th>
-                  <th className="rd-th" style={{ width: "10%" }}>Amount</th>
-                  <th className="rd-th" style={{ width: "8%" }}>Status</th>
+                  <th className="rd-th" style={{ width: "18%" }}>
+                    Document Type
+                  </th>
+                  <th className="rd-th" style={{ width: "18%" }}>
+                    Document No.
+                  </th>
+                  <th className="rd-th" style={{ width: "26%" }}>
+                    Customer
+                  </th>
+                  <th className="rd-th" style={{ width: "20%" }}>
+                    Date
+                  </th>
+                  <th className="rd-th" style={{ width: "10%" }}>
+                    Amount
+                  </th>
+                  <th className="rd-th" style={{ width: "8%" }}>
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: "36px 20px", textAlign: "center", color: "#64748b" }}>
+                    <td
+                      colSpan={6}
+                      style={{
+                        padding: "36px 20px",
+                        textAlign: "center",
+                        color: "#64748b",
+                      }}
+                    >
                       Loading documents...
                     </td>
                   </tr>
                 ) : documents.length > 0 ? (
                   documents.map((doc, idx) => {
-                    const docType = "Sales Quotation";
-                    const docNo = doc.quotation_number || `Draft #${doc.id}`;
-                    const customerName = doc.customer?.name || `Customer #${doc.customer_id}`;
-                    const formattedDate = doc.quotation_date || (doc.created_at ? new Date(doc.created_at).toLocaleDateString("en-IN") : "-");
-                    const formattedAmount = doc.total_amount
-                      ? `₹${Number(doc.total_amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
-                      : "₹0.00";
                     const isIssued = doc.status === "issued";
 
                     return (
@@ -136,7 +237,10 @@ export default function RecentDocuments({ mounted }) {
                         className="rd-row"
                         onClick={() => handleRowClick(doc)}
                         style={{
-                          borderBottom: idx < documents.length - 1 ? "1px solid #f1f5f9" : "none",
+                          borderBottom:
+                            idx < documents.length - 1
+                              ? "1px solid #f1f5f9"
+                              : "none",
                         }}
                       >
                         <td className="rd-td">
@@ -144,10 +248,10 @@ export default function RecentDocuments({ mounted }) {
                             style={{
                               fontSize: "14px",
                               fontWeight: 500,
-                              color: getTypeColor(docType),
+                              color: getTypeColor(doc.type),
                             }}
                           >
-                            {docType}
+                            {doc.type}
                           </span>
                         </td>
                         <td className="rd-td">
@@ -155,20 +259,21 @@ export default function RecentDocuments({ mounted }) {
                             style={{
                               fontSize: "14px",
                               color: "#475569",
-                              fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+                              fontFamily:
+                                'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
                             }}
                           >
-                            {docNo}
+                            {doc.docNo}
                           </span>
                         </td>
                         <td className="rd-td">
                           <span style={{ fontSize: "14px", color: "#334155" }}>
-                            {customerName}
+                            {doc.customer}
                           </span>
                         </td>
                         <td className="rd-td">
                           <span style={{ fontSize: "14px", color: "#64748b" }}>
-                            {formattedDate}
+                            {doc.date}
                           </span>
                         </td>
                         <td className="rd-td">
@@ -179,7 +284,7 @@ export default function RecentDocuments({ mounted }) {
                               color: "#1e293b",
                             }}
                           >
-                            {formattedAmount}
+                            {doc.amount}
                           </span>
                         </td>
                         <td className="rd-td">
@@ -195,7 +300,9 @@ export default function RecentDocuments({ mounted }) {
                                 height: "6px",
                                 width: "6px",
                                 borderRadius: "50%",
-                                backgroundColor: isIssued ? "#10b981" : "#f59e0b",
+                                backgroundColor: isIssued
+                                  ? "#10b981"
+                                  : "#f59e0b",
                                 display: "inline-block",
                               }}
                             />
@@ -215,11 +322,19 @@ export default function RecentDocuments({ mounted }) {
                         color: "#64748b",
                       }}
                     >
-                      <p style={{ fontSize: "15px", fontWeight: 500, margin: 0 }}>
+                      <p
+                        style={{ fontSize: "15px", fontWeight: 500, margin: 0 }}
+                      >
                         No documents generated yet
                       </p>
-                      <p style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px" }}>
-                        Click &ldquo;Create Quotation&rdquo; above to generate your first document.
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "#94a3b8",
+                          marginTop: "4px",
+                        }}
+                      >
+                        Create a tax invoice or quotation to see it here.
                       </p>
                     </td>
                   </tr>

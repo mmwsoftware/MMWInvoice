@@ -31,7 +31,9 @@ export default function InvoiceForm() {
 
   const [invoiceData, setInvoiceData] = useState(() => ({
     invoiceNo: location.state?.invoiceData?.invoiceNo || "",
-    invoiceDate: location.state?.invoiceData?.invoiceDate || new Date().toISOString().split("T")[0],
+    invoiceDate:
+      location.state?.invoiceData?.invoiceDate ||
+      new Date().toISOString().split("T")[0],
     poNo: location.state?.invoiceData?.poNo || "",
     poDate: location.state?.invoiceData?.poDate || "",
   }));
@@ -66,7 +68,24 @@ export default function InvoiceForm() {
           console.error("Failed to fetch next invoice number:", err);
         });
     }
-  }, []);
+  }, [invoiceData.invoiceNo]);
+
+  const handleCreateAnother = () => {
+    setCustomerData({
+      customerName: "",
+      address: "",
+      stateCode: "33",
+      gstin: "",
+    });
+    setInvoiceData({
+      invoiceNo: "",
+      invoiceDate: new Date().toISOString().split("T")[0],
+      poNo: "",
+      poDate: "",
+    });
+    setProducts([{ description: "", hsn: "", quantity: 1, rate: "" }]);
+    setCurrentStep(1);
+  };
 
   // Handlers
   const handleCustomerChange = (field, value) => {
@@ -117,6 +136,7 @@ export default function InvoiceForm() {
         invoiceData={invoiceData}
         products={products}
         onEdit={() => setCurrentStep(3)}
+        onCreateAnother={handleCreateAnother}
       />
     );
   }
@@ -150,7 +170,14 @@ export default function InvoiceForm() {
           >
             ← Back
           </button>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginTop: "4px",
+            }}
+          >
             <h1
               style={{
                 fontSize: "24px",
@@ -161,9 +188,7 @@ export default function InvoiceForm() {
             >
               Create Tax Invoice
             </h1>
-            <span className="inv-mobile-badge">
-              Step {currentStep}/4
-            </span>
+            <span className="inv-mobile-badge">Step {currentStep}/4</span>
           </div>
         </div>
 
@@ -209,18 +234,18 @@ export default function InvoiceForm() {
                       backgroundColor: isActive
                         ? "#2563eb"
                         : isCompleted
-                        ? "#dbeafe"
-                        : "#f1f5f9",
+                          ? "#dbeafe"
+                          : "#f1f5f9",
                       color: isActive
                         ? "#ffffff"
                         : isCompleted
-                        ? "#1d4ed8"
-                        : "#94a3b8",
+                          ? "#1d4ed8"
+                          : "#94a3b8",
                       border: isActive
                         ? "2px solid #2563eb"
                         : isCompleted
-                        ? "2px solid #93c5fd"
-                        : "2px solid transparent",
+                          ? "2px solid #93c5fd"
+                          : "2px solid transparent",
                       transition: "all 0.3s ease",
                     }}
                   >
@@ -233,8 +258,8 @@ export default function InvoiceForm() {
                       color: isActive
                         ? "#1d4ed8"
                         : isCompleted
-                        ? "#334155"
-                        : "#94a3b8",
+                          ? "#334155"
+                          : "#94a3b8",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -313,8 +338,8 @@ export default function InvoiceForm() {
                   color: isActive
                     ? "#1d4ed8"
                     : isCompleted
-                    ? "#334155"
-                    : "#64748b",
+                      ? "#334155"
+                      : "#64748b",
                   cursor: step.id <= currentStep ? "pointer" : "default",
                   textAlign: "left",
                   fontSize: "14px",
@@ -336,13 +361,11 @@ export default function InvoiceForm() {
                     backgroundColor: isActive
                       ? "#2563eb"
                       : isCompleted
-                      ? "#3b82f6"
-                      : "transparent",
+                        ? "#3b82f6"
+                        : "transparent",
                     color: isActive || isCompleted ? "#ffffff" : "#94a3b8",
                     border:
-                      isActive || isCompleted
-                        ? "none"
-                        : "1.5px solid #cbd5e1",
+                      isActive || isCompleted ? "none" : "1.5px solid #cbd5e1",
                     flexShrink: 0,
                   }}
                 >

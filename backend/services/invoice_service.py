@@ -311,6 +311,35 @@ def get_invoice_pdf(db: Session, invoice_id: int, public: bool = False) -> bytes
     return storage.get_pdf(path)
 
 
+def delete_invoice(db: Session, invoice_id: int) -> None:
+    invoice = get_invoice(db, invoice_id)
+    if not invoice:
+        raise ValueError("Invoice not found")
+
+    storage = _get_storage()
+    pdf_paths = [invoice.private_pdf_path, invoice.public_pdf_path]
+
+    try:
+        for path in pdf_paths:
+            if path:
+                storage.delete(path)
+
+        db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice_id).delete(
+            synchronize_session=False
+        )
+        db.query(PublicLink).filter(PublicLink.invoice_id == invoice_id).delete(
+            synchronize_session=False
+        )
+        _audit(db, "invoice", invoice_id, "deleted", {
+            "invoice_number": invoice.invoice_number,
+        })
+        db.delete(invoice)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+
 def get_public_invoice_pdf(db: Session, token: str) -> bytes:
     """Retrieve the public page-1 PDF by token. NEVER returns the full PDF."""
     link = (

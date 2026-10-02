@@ -2,20 +2,22 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PdfPreviewFrame from "../../../components/PdfPreviewFrame";
 import InvoiceGeneratedSuccess from "../components/InvoiceGeneratedSuccess";
-import { generateInvoice, previewInvoice } from "../../../services/documentHelpers";
+import {
+  generateInvoice,
+  previewInvoice,
+} from "../../../services/documentHelpers";
 
 export default function InvoicePreview({
   customerData: propCustomer,
   invoiceData: propInvoice,
   products: propProducts,
   onEdit,
+  onCreateAnother,
 }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-
-  const customerData =
-    propCustomer ||
+  const customerData = propCustomer ||
     location.state?.customerData || {
       customerName: "",
       address: "",
@@ -23,8 +25,7 @@ export default function InvoicePreview({
       gstin: "",
     };
 
-  const invoiceData =
-    propInvoice ||
+  const invoiceData = propInvoice ||
     location.state?.invoiceData || {
       invoiceNo: "Auto-assigned on issue",
       invoiceDate: new Date().toISOString().split("T")[0],
@@ -32,8 +33,7 @@ export default function InvoicePreview({
       poDate: "",
     };
 
-  const products =
-    propProducts ||
+  const products = propProducts ||
     location.state?.products || [
       {
         description: "",
@@ -47,7 +47,6 @@ export default function InvoicePreview({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedInvoice, setGeneratedInvoice] = useState(null);
 
-
   // Subtotal & Tax Calculations
   const subTotal = products.reduce((acc, item) => {
     const qty = parseFloat(item.quantity) || 0;
@@ -57,7 +56,6 @@ export default function InvoicePreview({
 
   const taxRate = 0.18;
   const grandTotal = Math.round(subTotal + subTotal * taxRate);
-
 
   const handleEdit = () => {
     if (onEdit) {
@@ -79,14 +77,18 @@ export default function InvoicePreview({
     setIsGenerating(true);
     try {
       // One call: validates, creates the customer if needed, numbers and issues the invoice.
-      const issued = await generateInvoice({ customerData, invoiceData, products });
+      const issued = await generateInvoice({
+        customerData,
+        invoiceData,
+        products,
+      });
       setGeneratedInvoice(issued);
       setIsGenerated(true);
     } catch (err) {
       console.error("Invoice generation error:", err);
       alert(
         "Failed to generate invoice: " +
-          (err.response?.data?.detail || err.message)
+          (err.response?.data?.detail || err.message),
       );
     } finally {
       setIsGenerating(false);
@@ -109,6 +111,7 @@ export default function InvoicePreview({
           invoiceData={invoiceData}
           grandTotal={grandTotal}
           onViewPDF={() => setIsGenerated(false)}
+          onCreateAnother={onCreateAnother}
         />
       ) : (
         <>
@@ -169,18 +172,42 @@ export default function InvoicePreview({
                 Document Summary
               </h3>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "3px",
+                    }}
+                  >
                     Document Type
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#059669" }}>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#059669",
+                    }}
+                  >
                     Tax Invoice
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "3px",
+                    }}
+                  >
                     Invoice No.
                   </div>
                   <div
@@ -196,45 +223,103 @@ export default function InvoicePreview({
                 </div>
 
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "3px",
+                    }}
+                  >
                     Date
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0f172a",
+                    }}
+                  >
                     {invoiceData.invoiceDate}
                   </div>
                 </div>
 
                 {invoiceData.poNo && (
                   <div>
-                    <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#64748b",
+                        marginBottom: "3px",
+                      }}
+                    >
                       PO Number
                     </div>
-                    <div style={{ fontSize: "14px", fontWeight: 500, color: "#334155" }}>
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#334155",
+                      }}
+                    >
                       {invoiceData.poNo}
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "3px",
+                    }}
+                  >
                     Customer
                   </div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", lineHeight: "1.4" }}>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0f172a",
+                      lineHeight: "1.4",
+                    }}
+                  >
                     {customerData.customerName || "Customer"}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "3px",
+                    }}
+                  >
                     Total Amount (Incl. GST)
                   </div>
-                  <div style={{ fontSize: "19px", fontWeight: 800, color: "#0f172a" }}>
-                    ₹{grandTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                  <div
+                    style={{
+                      fontSize: "19px",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                    }}
+                  >
+                    ₹
+                    {grandTotal.toLocaleString("en-IN", {
+                      maximumFractionDigits: 2,
+                    })}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "6px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "6px",
+                    }}
+                  >
                     Status
                   </div>
                   <span
@@ -334,7 +419,9 @@ export default function InvoicePreview({
                 }}
               >
                 <PdfPreviewFrame
-                  load={() => previewInvoice({ customerData, invoiceData, products })}
+                  load={() =>
+                    previewInvoice({ customerData, invoiceData, products })
+                  }
                   onEdit={handleEdit}
                   title="Tax Invoice PDF preview"
                 />

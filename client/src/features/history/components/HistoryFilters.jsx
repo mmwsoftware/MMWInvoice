@@ -1,3 +1,5 @@
+import HistoryDateRange from "./HistoryDateRange";
+
 const filters = ["All", "Sales Quotations", "Tax Invoices", "Proforma Invoices"];
 
 export default function HistoryFilters({
@@ -6,12 +8,16 @@ export default function HistoryFilters({
   setActiveFilter,
   searchQuery,
   setSearchQuery,
+  dateRange,
+  setDateRange,
   setCurrentPage,
 }) {
   return (
     <>
       <div
         style={{
+          position: "relative",
+          zIndex: 100,
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
@@ -40,6 +46,7 @@ export default function HistoryFilters({
           {filters.map((filter) => (
             <button
               key={filter}
+              type="button"
               onClick={() => {
                 setActiveFilter(filter);
                 setCurrentPage(1);
@@ -68,7 +75,13 @@ export default function HistoryFilters({
         </div>
 
         {/* Search Input */}
-        <div style={{ position: "relative", flex: "1", minWidth: "240px" }}>
+        <div
+          style={{
+            position: "relative",
+            flex: "1",
+            minWidth: "240px",
+          }}
+        >
           <svg
             style={{
               position: "absolute",
@@ -90,6 +103,7 @@ export default function HistoryFilters({
               d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
             />
           </svg>
+
           <input
             type="text"
             placeholder="Search by customer, document number..."
@@ -116,55 +130,27 @@ export default function HistoryFilters({
         </div>
 
         {/* Date Range Picker */}
-        <button
-          className="hf-date-range-btn"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            height: "40px",
-            padding: "0 16px",
-            fontSize: "14px",
-            color: "#64748b",
-            border: "1px solid #e2e8f0",
-            borderRadius: "10px",
-            backgroundColor: "#ffffff",
-            cursor: "pointer",
-            transition: "all 0.2s",
-            whiteSpace: "nowrap",
+        <HistoryDateRange
+          value={dateRange}
+          onChange={(range) => {
+            setDateRange(range);
+            setCurrentPage(1);
           }}
-        >
-          <svg
-            style={{ height: "16px", width: "16px" }}
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"
-            />
-          </svg>
-          Select date range
-        </button>
+        />
       </div>
 
       <style>{`
         .hf-filter-tab:hover {
           color: #334155 !important;
         }
+
         .hf-search-input:focus {
           border-color: #3b82f6 !important;
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
+
         .hf-search-input::placeholder {
           color: #94a3b8;
-        }
-        .hf-date-range-btn:hover {
-          border-color: #cbd5e1;
-          background-color: #f8fafc !important;
         }
       `}</style>
     </>

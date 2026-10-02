@@ -8,16 +8,21 @@ export default function InvoiceGeneratedSuccess({
   invoiceData,
   grandTotal,
   onViewPDF,
+  onCreateAnother,
 }) {
   const navigate = useNavigate();
 
-  const invoiceNo = invoice?.invoice_number || invoiceData?.invoiceNo || "MAX/2026/0001";
-  const customerName = invoice?.customer?.name || customerData?.customerName || "Customer";
+  const invoiceNo =
+    invoice?.invoice_number || invoiceData?.invoiceNo || "MAX/2026/0001";
+  const customerName =
+    invoice?.customer?.name || customerData?.customerName || "Customer";
   const totalAmount = invoice?.total_amount
-    ? Number(invoice.total_amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })
+    ? Number(invoice.total_amount).toLocaleString("en-IN", {
+        maximumFractionDigits: 2,
+      })
     : grandTotal
-    ? Number(grandTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 })
-    : "0.00";
+      ? Number(grandTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 })
+      : "0.00";
 
   const currentDateFormatted = new Date().toLocaleDateString("en-IN", {
     day: "numeric",
@@ -52,6 +57,14 @@ export default function InvoiceGeneratedSuccess({
     } catch (err) {
       alert("Failed to download PDF: " + (err.message || "Error"));
     }
+  };
+
+  const handleCreateAnother = () => {
+    if (onCreateAnother) {
+      onCreateAnother();
+      return;
+    }
+    navigate("/dashboard/invoice", { replace: true, state: null });
   };
 
   return (
@@ -102,7 +115,11 @@ export default function InvoiceGeneratedSuccess({
           strokeWidth={3}
           stroke="currentColor"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="m4.5 12.75 6 6 9-13.5"
+          />
         </svg>
       </div>
 
@@ -124,7 +141,8 @@ export default function InvoiceGeneratedSuccess({
           margin: "0 0 32px 0",
         }}
       >
-        Your official 2-page tax invoice has been generated, signed, and saved to document history.
+        Your official 2-page tax invoice has been generated, signed, and saved
+        to document history.
       </p>
 
       {/* Details Card */}
@@ -140,35 +158,90 @@ export default function InvoiceGeneratedSuccess({
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", color: "#64748b" }}>Document Type</span>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#059669" }}>Tax Invoice</span>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontSize: "14px", color: "#64748b" }}>
+              Document Type
+            </span>
+            <span
+              style={{ fontSize: "14px", fontWeight: 700, color: "#059669" }}
+            >
+              Tax Invoice
+            </span>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", color: "#64748b" }}>Invoice No.</span>
-            <span style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontSize: "14px", color: "#64748b" }}>
+              Invoice No.
+            </span>
+            <span
+              style={{
+                fontSize: "15px",
+                fontWeight: 700,
+                color: "#0f172a",
+                fontFamily: "monospace",
+              }}
+            >
               {invoiceNo}
             </span>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <span style={{ fontSize: "14px", color: "#64748b" }}>Customer</span>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0f172a" }}>
+            <span
+              style={{ fontSize: "14px", fontWeight: 700, color: "#0f172a" }}
+            >
               {customerName}
             </span>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", color: "#64748b" }}>Total Amount (Incl. GST)</span>
-            <span style={{ fontSize: "19px", fontWeight: 800, color: "#0f172a" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontSize: "14px", color: "#64748b" }}>
+              Total Amount (Incl. GST)
+            </span>
+            <span
+              style={{ fontSize: "19px", fontWeight: 800, color: "#0f172a" }}
+            >
               ₹{totalAmount}
             </span>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", color: "#64748b" }}>Date & Time</span>
-            <span style={{ fontSize: "14px", color: "#475569", fontWeight: 500 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontSize: "14px", color: "#64748b" }}>
+              Date & Time
+            </span>
+            <span
+              style={{ fontSize: "14px", color: "#475569", fontWeight: 500 }}
+            >
               {currentDateFormatted}, {currentTimeFormatted}
             </span>
           </div>
@@ -204,9 +277,23 @@ export default function InvoiceGeneratedSuccess({
           }}
           className="succ-btn-view"
         >
-          <svg style={{ height: "18px", width: "18px" }} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+          <svg
+            style={{ height: "18px", width: "18px" }}
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.8}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+            />
           </svg>
           View PDF in Browser
         </button>
@@ -230,15 +317,32 @@ export default function InvoiceGeneratedSuccess({
           }}
           className="succ-btn-down"
         >
-          <svg style={{ height: "18px", width: "18px" }} fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          <svg
+            style={{ height: "18px", width: "18px" }}
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.8}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
+            />
           </svg>
           Download PDF
         </button>
       </div>
 
       {/* Secondary Navigation */}
-      <div style={{ display: "flex", gap: "16px", justifyContent: "center", alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "16px",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
         <button
           onClick={() => navigate("/dashboard/history")}
           style={{
@@ -256,7 +360,7 @@ export default function InvoiceGeneratedSuccess({
         </button>
         <span style={{ color: "#cbd5e1" }}>•</span>
         <button
-          onClick={() => navigate("/dashboard/invoice", { replace: true, state: null })}
+          onClick={handleCreateAnother}
           style={{
             fontSize: "13px",
             fontWeight: 500,

@@ -25,6 +25,7 @@ STATIC_ENGINEER_CONTACT = "99528 23148"
 STATIC_COUNTRY = "India"
 STATIC_COUNTRY_CODE = "91"
 
+
 class FieldOverflow(Exception):
     ...
 
@@ -136,6 +137,88 @@ def _draw(page, fonts, f, text, x=None, dy=0.0, max_w=None, min_scale=0.78, size
         kw["fontfile"] = path
 
     page.insert_text((x, f["baseline"] + dy), text, **kw)
+
+
+# ---------------------------------------------------------------- item description layout
+ITEM_DESC_WRAP_W = 312.0      # wrap width for a description line (column is 344pt wide)
+ITEM_DESC_MAX_W = 320.0       # hard limit handed to _draw
+ITEM_ROW_PITCH = 15.0         # height of a one-line item row (template spacing)
+ITEM_BODY_BUDGET = 75.0       # usable height of the item table body
+DESC_LINE_PITCH = 12.4        # line spacing inside a wrapped description at full size
+DESC_MIN_SCALE = 0.78         # smallest size a description may shrink to
+ITEM_BODY_TOP = 244.5         # clamp limits for a single, tall item
+ITEM_BODY_BOTTOM = 322.0
+FIRST_ROW_BASELINE = 256.5    # baseline of row 1 when there are 2-5 items
+
+
+def _wrap_text(font, text, size, max_w):
+    """Greedy word wrap. Words wider than a line are split by character."""
+    lines = []
+    for para in str(text).split("\n"):
+        cur = ""
+        for word in para.split():
+            while font.text_length(word, size) > max_w:
+                k = len(word)
+                while k > 1 and font.text_length(word[:k], size) > max_w:
+                    k -= 1
+                if cur:
+                    lines.append(cur)
+                    cur = ""
+                lines.append(word[:k])
+                word = word[k:]
+            if not word:
+                continue
+            cand = word if not cur else f"{cur} {word}"
+            if font.text_length(cand, size) <= max_w:
+                cur = cand
+            else:
+                lines.append(cur)
+                cur = word
+        if cur:
+            lines.append(cur)
+    return lines
+
+
+def _layout_item_rows(fonts, f_desc, items):
+    """Decide how each item description is drawn.
+
+    A description that fits on one line (shrunk to no less than 78%, exactly as
+    before) stays on one line. A longer one is wrapped onto extra lines, and the
+    whole table body is re-fitted if needed. Returns one dict per item with the
+    lines to draw, the font size to use (None = field default), the line pitch,
+    and the row height.
+    """
+    font, _path, _alias = fonts.get(f_desc["font"])
+    base = f_desc["size"]
+    descs = [str(it["description"]).strip() for it in items]
+
+    def one_line(d):
+        return "\n" not in d and font.text_length(d, base) <= ITEM_DESC_MAX_W / DESC_MIN_SCALE
+
+    def build(scale):
+        rows = []
+        for d in descs:
+            if one_line(d):
+                rows.append(dict(lines=[d], size=None, pitch=DESC_LINE_PITCH, height=ITEM_ROW_PITCH))
+                continue
+            size = base * scale
+            pitch = DESC_LINE_PITCH * scale
+            lines = _wrap_text(font, d, size, ITEM_DESC_WRAP_W)
+            height = max(ITEM_ROW_PITCH, len(lines) * pitch + 5.0)
+            rows.append(dict(lines=lines, size=size, pitch=pitch, height=height))
+        return rows
+
+    for scale in (1.0, 0.94, 0.88, 0.82, DESC_MIN_SCALE):
+        rows = build(scale)
+        if sum(r["height"] for r in rows) <= ITEM_BODY_BUDGET:
+            return rows
+
+    n = len(items)
+    raise FieldOverflow(
+        f"The product descriptions are too long to fit in the invoice table "
+        f"with {n} item{'s' if n != 1 else ''}. Please shorten the long "
+        f"description(s)" + (" or use fewer items." if n > 1 else ".")
+    )
 
 
 # ---------------------------------------------------------------- template cleaning
@@ -516,19 +599,35 @@ def build_pdfs(
     )
 
     # -- page 1: line items
-    # 1 item = exact original placement; 2-5 = stacked rows, my extrapolation
+    # 1 item = original placement; 2-5 = stacked rows. A long description wraps
+    # onto extra lines and its row grows; the other columns sit at the row middle.
     n = len(c["lines"])
-    base_shift0 = (
-        256.5 -
-        f1["item_sr"]["baseline"]
-    )
+    b0 = f1["item_sr"]["baseline"]
+    rows = _layout_item_rows(fonts, f1["item_desc"], c["lines"])
 
-    for i, l in enumerate(c["lines"]):
-        dy = (
-            0.0
-            if n == 1
-            else base_shift0 + i * 15.0
-        )
+    offset = 0.0
+    for i, (l, row) in enumerate(zip(c["lines"], rows)):
+        nl = len(row["lines"])
+        pitch = row["pitch"]
+
+        if n == 1:
+            dy = 0.0
+            if nl > 1:
+                size = row["size"] or f1["item_desc"]["size"]
+                top = b0 - (nl - 1) / 2 * pitch - 0.8 * size
+                bottom = b0 + (nl - 1) / 2 * pitch + 0.25 * size
+                if top < ITEM_BODY_TOP:
+                    dy = ITEM_BODY_TOP - top
+                elif bottom > ITEM_BODY_BOTTOM:
+                    dy = ITEM_BODY_BOTTOM - bottom
+        else:
+            dy = (
+                FIRST_ROW_BASELINE
+                + offset
+                + (row["height"] - ITEM_ROW_PITCH) / 2
+                - b0
+            )
+        offset += row["height"]
 
         _draw(
             p1,
@@ -538,14 +637,16 @@ def build_pdfs(
             dy=dy,
         )
 
-        _draw(
-            p1,
-            fonts,
-            f1["item_desc"],
-            l["description"],
-            dy=dy,
-            max_w=320,
-        )
+        for k, text in enumerate(row["lines"]):
+            _draw(
+                p1,
+                fonts,
+                f1["item_desc"],
+                text,
+                dy=dy + (k - (nl - 1) / 2) * pitch,
+                max_w=ITEM_DESC_MAX_W,
+                size_override=row["size"],
+            )
 
         _draw(
             p1,
