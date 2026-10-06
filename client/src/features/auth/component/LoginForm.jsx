@@ -179,19 +179,13 @@ export default function LoginForm() {
 
             {/* Mobile Company Logo (visible on mobile only) */}
             <div className="md:hidden flex flex-col items-center mb-6 text-center">
-              <div className="h-16 w-24 bg-white rounded-xl flex items-center justify-center shadow-xs border border-slate-200/80 p-2 mb-2.5">
+              <div className="h-16 w-24 flex items-center justify-center">
                 <img
                   src="/logo.png"
                   alt="MMW Logo"
                   className="max-h-12 max-w-20 object-contain"
                 />
               </div>
-              <h1 className="text-base font-bold text-slate-800 leading-tight">
-                Maxmoc Motor Works
-              </h1>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                India Private Limited
-              </p>
             </div>
 
             {/* Heading */}
