@@ -6,6 +6,7 @@ All static design (borders, logo, labels, bank details, watermark) is never redr
 """
 
 import io, json, hashlib, datetime
+from pathlib import Path
 import pymupdf
 from PIL import Image
 from engines.invoice import config
@@ -474,16 +475,25 @@ def build_pdfs(
     out_dir=None,
     basename=None,
 ):
-    m = load_map()
     c = compute(data)
 
-    tpl = pymupdf.open(
-        str(config.TEMPLATE_PDF)
-    )
+    if c["is_same_state"]:
+        template_path = Path(config.TEMPLATE_PDF).with_name("invoice_cgst_sgst.pdf")
+        field_map_path = Path(config.FIELD_MAP).with_name("invoice_cgst_sgst_field_map.json")
+    else:
+        template_path = Path(config.TEMPLATE_PDF)
+        field_map_path = Path(config.FIELD_MAP)
 
-    doc = pymupdf.open(
-        str(config.TEMPLATE_PDF)
-    )
+    if not template_path.exists():
+        raise FileNotFoundError(f"Invoice template not found: {template_path}")
+    if not field_map_path.exists():
+        raise FileNotFoundError(f"Invoice field map not found: {field_map_path}")
+
+    with field_map_path.open("r", encoding="utf-8") as f:
+        m = json.load(f)
+
+    tpl = pymupdf.open(str(template_path))
+    doc = pymupdf.open(str(template_path))
 
     copy_type = data.get(
         "copy_type",
@@ -700,32 +710,21 @@ def build_pdfs(
     )
 
     if c["is_same_state"]:
-        # The supplied invoice template has one GST row. Preserve that geometry
-        # and use two compact lines inside the row for CGST and SGST.
-        tax_line_size = 7.5
-        tax_line_dy = (-3.0, 3.0)
-        for label, amount, dy in (
-            (f"CGST @ {(c['gst_rate'] / D(2)).normalize():f}%", c["cgst"], tax_line_dy[0]),
-            (f"SGST @ {(c['gst_rate'] / D(2)).normalize():f}%", c["sgst"], tax_line_dy[1]),
-        ):
-            _draw(
-                p1,
-                fonts,
-                f1["tax_label"],
-                label,
-                dy=dy,
-                max_w=90,
-                size_override=tax_line_size,
-            )
-            _draw(
-                p1,
-                fonts,
-                f1["tax_value"],
-                fmt_inr(amount) + " (INR)",
-                dy=dy,
-                max_w=108,
-                size_override=tax_line_size,
-            )
+        # CGST and SGST labels are already printed on the same-state template.
+        _draw(
+            p1,
+            fonts,
+            f1["cgst_value"],
+            fmt_inr(c["cgst"]) + " (INR)",
+            max_w=108,
+        )
+        _draw(
+            p1,
+            fonts,
+            f1["sgst_value"],
+            fmt_inr(c["sgst"]) + " (INR)",
+            max_w=108,
+        )
     else:
         _draw(
             p1,
