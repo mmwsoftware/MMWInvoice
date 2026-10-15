@@ -6,10 +6,16 @@ import { customersApi, invoicesApi, quotationsApi } from "./api";
  */
 export async function getErrorMessage(err) {
   let data = err?.response?.data;
-  if (data instanceof Blob || data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
+  if (
+    data instanceof Blob ||
+    data instanceof ArrayBuffer ||
+    ArrayBuffer.isView(data)
+  ) {
     try {
       const text =
-        data instanceof Blob ? await data.text() : new TextDecoder().decode(data);
+        data instanceof Blob
+          ? await data.text()
+          : new TextDecoder().decode(data);
       data = JSON.parse(text);
     } catch {
       data = null;
@@ -56,7 +62,9 @@ async function resolveCustomerId(customer) {
 
   try {
     const found = await customersApi.list(name);
-    const match = found.find((c) => c.name.toLowerCase() === name.toLowerCase());
+    const match = found.find(
+      (c) => c.name.toLowerCase() === name.toLowerCase(),
+    );
     if (match) {
       await customersApi.update(match.id, payload);
       return match.id;
@@ -64,7 +72,10 @@ async function resolveCustomerId(customer) {
     const created = await customersApi.create(payload);
     return created.id;
   } catch (err) {
-    throw new Error(err.response?.data?.detail || "Failed to process customer.", { cause: err });
+    throw new Error(
+      err.response?.data?.detail || "Failed to process customer.",
+      { cause: err },
+    );
   }
 }
 
@@ -80,7 +91,9 @@ function buildItems(products, { defaultUom, maxItems }) {
     }));
 
   if (items.length === 0) {
-    throw new Error("Please add at least one product with a description and rate.");
+    throw new Error(
+      "Please add at least one product with a description and rate.",
+    );
   }
   if (maxItems && items.length > maxItems) {
     throw new Error(`This document supports a maximum of ${maxItems} items.`);
@@ -116,7 +129,10 @@ const invoiceBody = (invoiceData, products) => ({
   po_date: toInvoiceDate(invoiceData.poDate) || null,
   copy_type: "original",
   gst_rate: 18.0,
-  items: buildItems(products, { defaultUom: "Nos.", maxItems: INVOICE_MAX_ITEMS }),
+  items: buildItems(products, {
+    defaultUom: "Nos.",
+    maxItems: INVOICE_MAX_ITEMS,
+  }),
   invoice_number: invoiceData.invoiceNo?.trim() || null,
 });
 
@@ -175,7 +191,11 @@ const quotationBody = (letterData, quotationData, products) => ({
 });
 
 /** Real quotation PDF (a Blob) rendered from the form data. Saves nothing. */
-export async function previewQuotation({ letterData, quotationData, products }) {
+export async function previewQuotation({
+  letterData,
+  quotationData,
+  products,
+}) {
   const error = validateQuotationInput(letterData, quotationData, products);
   if (error) throw new Error(error);
 
@@ -186,11 +206,17 @@ export async function previewQuotation({ letterData, quotationData, products }) 
 }
 
 /** Creates, numbers and issues the quotation in one backend call. */
-export async function generateQuotation({ letterData, quotationData, products }) {
+export async function generateQuotation({
+  letterData,
+  quotationData,
+  products,
+}) {
   const error = validateQuotationInput(letterData, quotationData, products);
   if (error) throw new Error(error);
 
-  const customerId = await resolveCustomerId(quotationCustomer(letterData, quotationData));
+  const customerId = await resolveCustomerId(
+    quotationCustomer(letterData, quotationData),
+  );
   return quotationsApi.generate({
     customer_id: customerId,
     ...quotationBody(letterData, quotationData, products),

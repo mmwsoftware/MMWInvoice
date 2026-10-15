@@ -91,6 +91,9 @@ export default function QuotationForm() {
 
   const handleQuotationChange = (field, value) => {
     setQuotationData((prev) => ({ ...prev, [field]: value }));
+    if (field === "address") {
+      setLetterData((prev) => ({ ...prev, address: value }));
+    }
   };
 
   const handleProductChange = (index, field, value) => {

@@ -1,4 +1,5 @@
 import React from "react";
+import AddressFields from "../../../components/AddressFields";
 
 const stateOptions = [
   { code: "01", name: "01 - Jammu and Kashmir" },
@@ -125,29 +126,12 @@ export default function CustomerDetails({ data, onChange, onNext }) {
           />
         </div>
 
-        {/* Address */}
-        <div>
-          <label
-            style={{
-              display: "block",
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "#334155",
-              marginBottom: "6px",
-            }}
-          >
-            Address <span style={{ color: "#ef4444" }}>*</span>
-          </label>
-          <textarea
-            rows={3}
-            required
-            placeholder="No. 12, Industrial Estate, Chennai - 600 058 Tamil Nadu, India"
-            value={data.address || ""}
-            onChange={(e) => onChange("address", e.target.value)}
-            className="inv-input"
-            style={{ resize: "vertical", fontFamily: "inherit" }}
-          />
-        </div>
+        <AddressFields
+          value={data.address || ""}
+          onChange={(value) => onChange("address", value)}
+          className="inv-input"
+          label="Address"
+        />
 
         {/* State Code & GSTIN */}
         <div

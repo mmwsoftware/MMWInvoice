@@ -1,10 +1,7 @@
 import React from "react";
+import AddressFields from "../../../components/AddressFields";
 
-export default function LetterDetails({
-  data,
-  onChange,
-  onNext,
-}) {
+export default function LetterDetails({ data, onChange, onNext }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!data.companyName?.trim()) {
@@ -94,29 +91,12 @@ export default function LetterDetails({
 
         {/* Right Column */}
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          {/* Client Address */}
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "#334155",
-                marginBottom: "6px",
-              }}
-            >
-              Client Address <span style={{ color: "#ef4444" }}>*</span>
-            </label>
-            <textarea
-              rows={3}
-              required
-              placeholder="Enter building, street, area, city, pincode, state"
-              value={data.address || ""}
-              onChange={(e) => onChange("address", e.target.value)}
-              className="quot-input"
-              style={{ resize: "vertical", fontFamily: "inherit" }}
-            />
-          </div>
+          <AddressFields
+            value={data.address || ""}
+            onChange={(value) => onChange("address", value)}
+            className="quot-input"
+            label="Client Address"
+          />
 
           {/* Subject */}
           <div>

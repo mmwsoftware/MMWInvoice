@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from "react";
+import AddressFields from "../../../components/AddressFields";
 import { quotationsApi } from "../../../services/api";
 
-export default function QuotationDetails({
-  data,
-  onChange,
-  onNext,
-  onPrev,
-}) {
-  const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+export default function QuotationDetails({ data, onChange, onNext, onPrev }) {
+  const GSTIN_REGEX =
+    /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
   const gstinTrimmed = (data.gstin || "").trim().toUpperCase();
-  const isGstinInvalid = gstinTrimmed.length > 0 && !GSTIN_REGEX.test(gstinTrimmed);
+  const isGstinInvalid =
+    gstinTrimmed.length > 0 && !GSTIN_REGEX.test(gstinTrimmed);
 
   const [numberStatus, setNumberStatus] = useState({
     checking: false,
@@ -65,11 +63,16 @@ export default function QuotationDetails({
       return;
     }
     if (!numberStatus.available) {
-      alert(numberStatus.message || "Quotation number is already in use. Please enter a unique number.");
+      alert(
+        numberStatus.message ||
+          "Quotation number is already in use. Please enter a unique number.",
+      );
       return;
     }
     if (isGstinInvalid) {
-      alert(`GSTIN "${gstinTrimmed}" is invalid. Please enter a valid 15-character GSTIN (e.g. 33AABCT0000A1Z5), or leave it empty if the client has no GSTIN.`);
+      alert(
+        `GSTIN "${gstinTrimmed}" is invalid. Please enter a valid 15-character GSTIN (e.g. 33AABCT0000A1Z5), or leave it empty if the client has no GSTIN.`,
+      );
       return;
     }
     onNext();
@@ -139,15 +142,36 @@ export default function QuotationDetails({
               )}
             </div>
             {!numberStatus.available ? (
-              <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "4px", margin: "4px 0 0 0" }}>
+              <p
+                style={{
+                  fontSize: "12px",
+                  color: "#ef4444",
+                  marginTop: "4px",
+                  margin: "4px 0 0 0",
+                }}
+              >
                 ⚠️ {numberStatus.message}
               </p>
             ) : data.quoteNo?.trim() ? (
-              <p style={{ fontSize: "11px", color: "#10b981", marginTop: "4px", margin: "4px 0 0 0" }}>
+              <p
+                style={{
+                  fontSize: "11px",
+                  color: "#10b981",
+                  marginTop: "4px",
+                  margin: "4px 0 0 0",
+                }}
+              >
                 ✓ {numberStatus.message || "Number is available"}
               </p>
             ) : (
-              <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px", margin: "4px 0 0 0" }}>
+              <p
+                style={{
+                  fontSize: "11px",
+                  color: "#64748b",
+                  marginTop: "4px",
+                  margin: "4px 0 0 0",
+                }}
+              >
                 Auto-assigned from backend. You can edit this number.
               </p>
             )}
@@ -203,12 +227,20 @@ export default function QuotationDetails({
             >
               Client Details
             </h4>
-            <span style={{ fontSize: "11px", color: "#64748b", fontStyle: "italic" }}>
+            <span
+              style={{
+                fontSize: "11px",
+                color: "#64748b",
+                fontStyle: "italic",
+              }}
+            >
               Auto-filled from previous step
             </span>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+          >
             {/* Company Name */}
             <div>
               <label
@@ -231,28 +263,12 @@ export default function QuotationDetails({
               />
             </div>
 
-            {/* Address */}
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "12.5px",
-                  fontWeight: 600,
-                  color: "#334155",
-                  marginBottom: "6px",
-                }}
-              >
-                Address
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Client Address"
-                value={data.address || ""}
-                onChange={(e) => onChange("address", e.target.value)}
-                className="quot-input"
-                style={{ resize: "vertical", fontFamily: "inherit" }}
-              />
-            </div>
+            <AddressFields
+              value={data.address || ""}
+              onChange={(value) => onChange("address", value)}
+              className="quot-input"
+              label="Address"
+            />
 
             {/* GSTIN */}
             <div>
@@ -272,7 +288,12 @@ export default function QuotationDetails({
                 maxLength={15}
                 placeholder="e.g. 33AABCT0000A1Z5 (optional, leave blank if none)"
                 value={data.gstin || ""}
-                onChange={(e) => onChange("gstin", e.target.value.toUpperCase().replace(/\s/g, ""))}
+                onChange={(e) =>
+                  onChange(
+                    "gstin",
+                    e.target.value.toUpperCase().replace(/\s/g, ""),
+                  )
+                }
                 className="quot-input"
                 style={{
                   textTransform: "uppercase",
@@ -280,8 +301,16 @@ export default function QuotationDetails({
                 }}
               />
               {isGstinInvalid && (
-                <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "4px", margin: "4px 0 0 0" }}>
-                  GSTIN must be 15 characters (e.g. 33AABCT0000A1Z5) or leave blank if unregistered.
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#ef4444",
+                    marginTop: "4px",
+                    margin: "4px 0 0 0",
+                  }}
+                >
+                  GSTIN must be 15 characters (e.g. 33AABCT0000A1Z5) or leave
+                  blank if unregistered.
                 </p>
               )}
             </div>
@@ -301,11 +330,7 @@ export default function QuotationDetails({
           borderTop: "1px solid #f1f5f9",
         }}
       >
-        <button
-          type="button"
-          onClick={onPrev}
-          className="quot-btn-back"
-        >
+        <button type="button" onClick={onPrev} className="quot-btn-back">
           ← Back
         </button>
 
