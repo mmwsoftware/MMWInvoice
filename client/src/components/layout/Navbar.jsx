@@ -40,7 +40,7 @@ export default function Navbar() {
       style={{
         position: "sticky",
         top: 0,
-        zIndex: 50,
+        zIndex: 200,
         borderBottom: "1px solid #e2e8f0",
         backgroundColor: "#ffffff",
       }}
@@ -170,6 +170,7 @@ export default function Navbar() {
                   position: "absolute",
                   right: 0,
                   top: "48px",
+                  zIndex: 1000,
                   width: "200px",
                   borderRadius: "16px",
                   border: "1px solid #e2e8f0",
@@ -184,10 +185,18 @@ export default function Navbar() {
                     borderBottom: "1px solid #f1f5f9",
                   }}
                 >
-                  <p style={{ fontSize: "14px", fontWeight: 600, color: "#1e293b" }}>
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#1e293b",
+                    }}
+                  >
                     {displayName}
                   </p>
-                  <p style={{ fontSize: "12px", color: "#94a3b8" }}>{displayRole}</p>
+                  <p style={{ fontSize: "12px", color: "#94a3b8" }}>
+                    {displayRole}
+                  </p>
                 </div>
                 <div style={{ padding: "4px 0" }}>
                   <button
